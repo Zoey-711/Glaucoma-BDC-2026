@@ -19,7 +19,7 @@
 | S01 FOV 裁切 | IMPLEMENTED, TESTED | 官方 Train 6 图联系表、回退代码 | 扩大 QC 后方可视为正式可用 |
 | S02 LAB-L/CLAHE | IMPLEMENTED, TESTED | 官方 Train 6 图增强联系表 | 扩大病灶伪影 QC 后方可正式比较 |
 | S03 视盘 ROI | 接口 IMPLEMENTED, BLOCKED | 坐标/置信度/失败回退代码 | 无经可靠性验证且合规的定位器；禁止构造伪 ROI |
-| S04 全图+局部双分支 | 架构 IMPLEMENTED, TESTED, BLOCKED | 三模式单 logit/反向传播单测；独立概率融合模块 | S03 缺失；正式双分支训练入口 NOT_IMPLEMENTED，定位器就绪后须补齐并验收 |
+| S04 全图+局部双分支 | IMPLEMENTED, TESTED, BLOCKED | 三模式单 logit/反向传播、双输入确定性验证单测；统一 Trainer 与 Predictor/cost 接线 | S03 定位器缺失；未经过真实 ROI/正式训练/T4 验收 |
 | R01 Color Jitter | IMPLEMENTED, TESTED | 轻/中/无增强配置、Train 6 图联系表 | 扩大 QC 和真实训练 |
 | R02 Blur/JPEG | IMPLEMENTED, TESTED | 模糊/JPEG/无增强配置、Train QC、固定扰动脚本 | 扩大 QC 和压力测试 |
 | R03 MixUp | IMPLEMENTED, TESTED | α=.2/.4、软标签 BCE、Train QC | 真实训练 |

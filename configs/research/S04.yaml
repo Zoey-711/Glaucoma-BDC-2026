@@ -31,7 +31,7 @@ data_manifest_hash:
   val: 065a70213aeeff2dcf96b8df1eebef6ac5fdab6bea0f74e1686b3c3582cecc80
   archive: 9f55b6c8f5a893ed0bc77af98e3a3efbfd2ae98fd0d1dd3151d66c94f2c5f910
 output_dir: results/S04/seed_42/fold_none
-config_hash: be648964043b49f39c2ffce6be749c5119c1bf8eca5987f23f640c2a6ba32d62
+config_hash: 7a09f643677031120f7b4df5142b787c5d374607cfa418e761cf082d9a775fd1
 git_commit: null
 status: BLOCKED
 dependencies:
@@ -46,3 +46,6 @@ extra:
   - local_only
   - dual_branch
   - probability_fusion
+  branch_mode: dual_branch
+  local_weights_manifest: configs/weights_b02.local.json
+  require_roi: true

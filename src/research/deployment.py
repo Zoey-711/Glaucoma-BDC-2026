@@ -19,8 +19,10 @@ def compare_precisions(checkpoint,val_manifest,root,output,count=100):
     if not torch.cuda.is_available():raise ValueError('CUDA required')
     frame=read_manifest(val_manifest,root).iloc[:count]
     values={}
+    inference_files=None
     for precision in ['fp32','fp16']:
         model=Predictor(checkpoint,'cuda',precision)
+        inference_files=model.metadata['inference_files']
         probs=np.array([model.predict_image(open_rgb(r.resolved_path)) for r in frame.itertuples()])
         values[precision]=probs
     diff=np.abs(values['fp32']-values['fp16'])
@@ -30,8 +32,8 @@ def compare_precisions(checkpoint,val_manifest,root,output,count=100):
             'label_mismatch':int(np.sum((values['fp32']>=.5)!=(values['fp16']>=.5))),
             'pairwise_ranking_changed':rank_changed,'precision_gate':bool(diff.max()<=1e-3 and not rank_changed),
             'device':torch.cuda.get_device_name(),'t4_certified':False,
-            'inference_bytes':sum(p.stat().st_size for p in [Path(checkpoint)]),
-            'within_500mb':Path(checkpoint).stat().st_size<=500_000_000}
+            'inference_bytes':sum(f['bytes'] for f in inference_files),
+            'within_500mb':sum(f['bytes'] for f in inference_files)<=500_000_000}
     write_json(output,report)
     return report
 
@@ -77,7 +79,12 @@ def certify_t4_report(checkpoint, report_path):
     measured=float(np.asarray(rounds,dtype=float).mean())
     if not np.isfinite(measured) or abs(measured-float(report.get('mean_ms',float('nan'))))>1e-6:
         raise ValueError('T4 latency cannot be independently reproduced')
-    model_bytes=Path(checkpoint).stat().st_size
+    files=report.get('inference_files') or []
+    if not files or not any(f.get('sha256')==sha256(checkpoint) for f in files):
+        raise ValueError('T4 report loaded-file inventory is missing checkpoint')
+    if len({f.get('path') for f in files})!=len(files) or any(not isinstance(f.get('bytes'),int) or f['bytes']<1 for f in files):
+        raise ValueError('Invalid T4 loaded-file inventory')
+    model_bytes=sum(f['bytes'] for f in files)
     passed=(model_bytes<=500_000_000 and measured<=100 and
             report.get('passed') is True and report.get('mismatches_by_round')==[0,0,0])
     return {'t4_certified':passed,'mean_ms':measured,'loaded_model_bytes':model_bytes,

@@ -123,6 +123,22 @@ def test_s04_requires_reviewed_locator_and_supports_three_binary_modes():
         output.square().mean().backward()
 
 
+def test_s04_dual_dataset_has_one_label_and_deterministic_validation():
+    from src.research.data import DualImageDataset
+    from src.research.trainer import forward_inputs
+    class Locator:
+        reviewed=True
+        def locate(self,image):return (image.width//2,image.height//2,.99)
+    cfg=dataclasses.replace(ExperimentConfig.load('configs/research/S04.yaml'),
+        image_size=64,config_hash=None)
+    row=pd.DataFrame([{'image_id':'synthetic','resolved_path':str(Path('outputs/research_smoke_v3/images/train_0.png')),
+                       'label':1}])
+    ds=DualImageDataset(row,cfg,cfg,Locator(),train=False)
+    (g1,l1),y,i=ds[0];(g2,l2),_,_=ds[0]
+    assert g1.shape==l1.shape==(3,64,64) and y.item()==1 and i==0
+    assert torch.equal(g1,g2) and torch.equal(l1,l2)
+
+
 def test_t4_certification_rejects_local_report(tmp_path):
     from src.research.deployment import certify_t4_report
     checkpoint=tmp_path/'model.pth';checkpoint.write_bytes(b'synthetic')

@@ -17,7 +17,7 @@ from sklearn.metrics import confusion_matrix
 
 from src.metrics import metrics
 from src.utils import seed_everything, sha256, write_json
-from .data import BalancedBatchSampler,ImageDataset,load_official
+from .data import BalancedBatchSampler,ImageDataset,DualImageDataset,load_official
 from .losses import BinaryObjective,bernoulli_kl
 from .models import make_model,split_parameters
 
@@ -51,13 +51,23 @@ def mixup(x,y,alpha,seed):
     return lam*x+(1-lam)*x[perm],lam*y+(1-lam)*y[perm]
 
 
+def move_inputs(x,device):
+    if isinstance(x,(tuple,list)):
+        return tuple(value.to(device,non_blocking=True) for value in x)
+    return x.to(device,non_blocking=True)
+
+
+def forward_inputs(model,x):
+    return model(*x) if isinstance(x,tuple) else model(x)
+
+
 def evaluate(model,ds,cfg,device,source='official_val'):
     model.eval();dl,_=loader(ds,cfg,False);records=[]
     with torch.inference_mode():
         for x,y,index in dl:
-            x=x.to(device,non_blocking=True)
+            x=move_inputs(x,device)
             # Match frozen B02/G01 validation: FP32, no random augmentation.
-            z=model(x).float().flatten().cpu().numpy()
+            z=forward_inputs(model,x).float().flatten().cpu().numpy()
             for i,logit,label in zip(index.numpy(),z,y.numpy()):
                 records.append((int(i),float(logit),float(label)))
     records.sort(key=lambda row:row[0])
@@ -116,10 +126,20 @@ def run(cfg,root,train_manifest,val_manifest,*,smoke=False,resume=False,group_ma
         (out/'config.yaml').write_text(yaml.safe_dump(cfg.as_dict(),sort_keys=False,allow_unicode=True),encoding='utf-8')
         (out/'environment.txt').write_text(f'python={platform.python_version()}\ntorch={torch.__version__}\ncuda={torch.version.cuda}\ngpu={manifest["gpu"]}\n',encoding='utf-8')
         (out/'training.log').write_text('',encoding='utf-8')
-    model=make_model(cfg,smoke=smoke).to(device)
+    is_dual=cfg.experiment_id.startswith('S04')
+    if is_dual:
+        from .branches import GlobalLocalClassifier,load_reviewed_locator,local_config
+        locator=load_reviewed_locator(cfg)
+        local_cfg=local_config(cfg)
+        model=GlobalLocalClassifier(cfg,local_cfg,locator,
+            mode=cfg.extra.get('branch_mode','dual_branch'),smoke=smoke).to(device)
+    else:
+        model=make_model(cfg,smoke=smoke).to(device)
     backbone,head=split_parameters(model)
     optimizer=torch.optim.AdamW([{'params':backbone,'lr':cfg.backbone_lr},{'params':head,'lr':cfg.head_lr}],weight_decay=cfg.weight_decay)
-    train_ds=ImageDataset(train_frame,cfg,True);val_ds=ImageDataset(val_frame,cfg,False)
+    dataset_type=DualImageDataset if is_dual else ImageDataset
+    train_ds=(dataset_type(train_frame,cfg,local_cfg,locator,True) if is_dual else dataset_type(train_frame,cfg,True))
+    val_ds=(dataset_type(val_frame,cfg,local_cfg,locator,False) if is_dual else dataset_type(val_frame,cfg,False))
     val_loader,_=loader(val_ds,cfg)
     steps=math.ceil(math.ceil(len(train_ds)/cfg.batch_size)/cfg.gradient_accumulation)
     scheduler=make_scheduler(optimizer,steps,cfg)
@@ -145,11 +165,12 @@ def run(cfg,root,train_manifest,val_manifest,*,smoke=False,resume=False,group_ma
             if device.type=='cuda':torch.cuda.reset_peak_memory_stats(device)
             epoch_start=time.perf_counter();optimizer.zero_grad(set_to_none=True)
             for step,(x,y,index) in enumerate(train_loader):
-                x=x.to(device,non_blocking=True);y=y.to(device,non_blocking=True)
+                x=move_inputs(x,device);y=y.to(device,non_blocking=True)
                 if cfg.extra.get('mixup_alpha'):
+                    if is_dual:raise ValueError('S04 MixUp requires paired-view implementation')
                     x,y=mixup(x,y,float(cfg.extra['mixup_alpha']),cfg.seed+epoch*100000+step)
                 with torch.autocast(device_type=device.type,enabled=device.type=='cuda'):
-                    logits=model(x).flatten()
+                    logits=forward_inputs(model,x).flatten()
                     if logits.shape!=y.shape:raise ValueError('Binary logit shape mismatch')
                     loss=objective(logits,y)
                     if teacher is not None:
@@ -175,7 +196,7 @@ def run(cfg,root,train_manifest,val_manifest,*,smoke=False,resume=False,group_ma
             peak_reserved=torch.cuda.max_memory_reserved(device)/2**20 if device.type=='cuda' else None
             predictions,score=evaluate(model,val_ds,cfg,device)
             if oof_frame is not None:
-                fold_ds=ImageDataset(oof_frame,cfg,False)
+                fold_ds=(dataset_type(oof_frame,cfg,local_cfg,locator,False) if is_dual else dataset_type(oof_frame,cfg,False))
                 fold_pred,fold_score=evaluate(model,fold_ds,cfg,device,'train_oof')
                 fold_pred.to_csv(out/'oof_train.csv',index=False)
             row={'epoch':epoch+1,'train_loss':loss_total/seen,'train_seconds':train_seconds,

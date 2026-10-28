@@ -22,6 +22,7 @@ class Predictor:
         self.precision = precision
         self.checkpoint = Path(checkpoint).resolve()
         self.children = None
+        self.locator_files = []
         self.tta = ['identity']
         self.channels_last = False
         if self.checkpoint.suffix == '.json':
@@ -61,8 +62,27 @@ class Predictor:
             from .research.models import make_model
             from .research.preprocess import transform_image
             research_config = ExperimentConfig(**self.config)
-            self.model = make_model(research_config, smoke=True)
-            self.transform = lambda im: transform_image(im, research_config, train=False)
+            if research_config.experiment_id.startswith('S04'):
+                from .research.branches import GlobalLocalClassifier,load_reviewed_locator
+                from .research.preprocess import crop_disc
+                from dataclasses import replace
+                locator=load_reviewed_locator(research_config)
+                # Full branch weights are embedded in the final checkpoint.
+                local_cfg=replace(research_config,backbone='efficientnet_b0',weights_manifest=None,
+                    pretrained_source=None,pretrained_sha256=None,license=None,config_hash=None)
+                self.model=GlobalLocalClassifier(research_config,local_cfg,locator,
+                    mode=research_config.extra.get('branch_mode','dual_branch'),smoke=True)
+                def dual_transform(im):
+                    local,roi=crop_disc(im,locator)
+                    if not roi['applied'] and research_config.extra.get('require_roi',True):
+                        raise ValueError('S04 locator failed on inference image')
+                    return (transform_image(im,research_config,False),transform_image(local,local_cfg,False))
+                self.transform=dual_transform
+                self.locator_files=[Path(research_config.extra['locator_review_report']),
+                                    Path(__import__(locator.__class__.__module__,fromlist=['x']).__file__)]
+            else:
+                self.model = make_model(research_config, smoke=True)
+                self.transform = lambda im: transform_image(im, research_config, train=False)
             self.threshold = .5
         else:
             self.model = build_model(allow_random=True, model_config=obj['config'].get('model'))
@@ -86,7 +106,9 @@ class Predictor:
         # Configuration, normalization and class logic needed for inference are embedded in the checkpoint/code.
         self.metadata['inference_files'] = [{'path': str(self.checkpoint), 'bytes': self.checkpoint.stat().st_size,
                                            'sha256': self.metadata['checkpoint_sha256']}]
-        if self.checkpoint.stat().st_size > 500_000_000:
+        self.metadata['inference_files'] += [{'path':str(p.resolve()),'bytes':p.stat().st_size,'sha256':sha256(p)}
+                                             for p in self.locator_files]
+        if sum(f['bytes'] for f in self.metadata['inference_files']) > 500_000_000:
             raise ValueError('Inference artifacts exceed 500 MB (decimal)')
 
     def synchronize(self):
@@ -106,10 +128,13 @@ class Predictor:
                     self.last_logits.extend(child.last_logits)
                 probability += weight * sum(values) / len(values)
             return probability
-        x = self.transform(im).unsqueeze(0).to(self.device)
-        if self.channels_last: x = x.contiguous(memory_format=torch.channels_last)
+        transformed=self.transform(im)
+        x=(tuple(t.unsqueeze(0).to(self.device) for t in transformed) if isinstance(transformed,tuple)
+           else transformed.unsqueeze(0).to(self.device))
+        if self.channels_last:
+            x=tuple(t.contiguous(memory_format=torch.channels_last) for t in x) if isinstance(x,tuple) else x.contiguous(memory_format=torch.channels_last)
         with torch.autocast(device_type=self.device.type, dtype=torch.float16, enabled=self.precision == 'fp16'):
-            logit = self.model(x).flatten().float()
+            logit = (self.model(*x) if isinstance(x,tuple) else self.model(x)).flatten().float()
             p = float(logit.sigmoid().item())
             self.last_logits = [float(logit.item())]
         return p

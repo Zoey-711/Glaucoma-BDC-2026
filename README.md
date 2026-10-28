@@ -2,6 +2,8 @@
 
 Phase 3 研究工程：20 组主实验配置、6 组复核/部署配置、统一 Trainer、8 GPU 队列、结果包验收与合成 Smoke Test 已接入。实际可运行程度与阻塞原因逐组见 [研究状态表](docs/research_status.md)，服务器命令见 [朋友训练指南](FRIEND_TRAINING_GUIDE.md)，交付文件见 [结果契约](RESULT_CONTRACT.md)。本阶段没有启动新的官方数据正式训练，也没有 T4 实测。
 
+协作者请先读 [第一批 8 GPU 任务单](FRIEND_TASKS.md)：逐卡说明需要训练什么、何时不能运行、每个实验需要交付哪些文件。
+
 Phase 2 最新结果：G01 ConvNeXt-Tiny-224 已完成，Val AUROC 0.983562、AUPRC 0.804615，相对 B02 的 ΔAUROC +0.000502，配对 Bootstrap 95% CI 跨0；详见 [G01实验报告](docs/G01_experiment_report.md)及[Train/Val关联审计](docs/phase2_audit_report.md)。未生成 Round02 提交。
 
 早期感知哈希筛查的阻塞记录保留在 [G01历史阻塞报告](docs/G01_execution_status.md)；多层复核及用户授权的双轨推进结论以本轮审计报告为准。[胸片组件迁移方案](docs/cxr_migration_plan.md)记录此前只读迁移阶段，8份禁用候选草案仍在 `configs/experiments/migration_drafts/`。

@@ -8,6 +8,7 @@ from torch.utils.data import Dataset, Sampler
 
 from src.data import read_manifest
 from .preprocess import transform_image
+from .preprocess import crop_disc
 
 
 class ImageDataset(Dataset):
@@ -20,6 +21,26 @@ class ImageDataset(Dataset):
         rng=np.random.default_rng(self.cfg.seed+self.epoch*len(self.frame)+int(idx))
         with Image.open(row.resolved_path) as im:x=transform_image(im,self.cfg,self.train,rng,self.locator)
         return x,torch.tensor(float(row.label)),int(idx)
+
+
+class DualImageDataset(ImageDataset):
+    """S04 source-image decode, reviewed ROI and separate deterministic validation views."""
+    def __init__(self,frame,cfg,local_cfg,locator,train=False):
+        super().__init__(frame,cfg,train,locator)
+        if not getattr(locator,'reviewed',False):raise ValueError('Reviewed S03 locator required')
+        self.local_cfg=local_cfg
+
+    def __getitem__(self,idx):
+        row=self.frame.iloc[int(idx)]
+        with Image.open(row.resolved_path) as im:
+            image=im.convert('RGB')
+            local,roi=crop_disc(image,self.locator)
+            if not roi['applied'] and self.cfg.extra.get('require_roi',True):
+                raise ValueError(f'ROI locator failed for {row.image_id}; run S03 QC first')
+            seed=self.cfg.seed+self.epoch*len(self.frame)+int(idx)
+            global_tensor=transform_image(image,self.cfg,self.train,np.random.default_rng(seed))
+            local_tensor=transform_image(local,self.local_cfg,self.train,np.random.default_rng(seed))
+        return (global_tensor,local_tensor),torch.tensor(float(row.label)),int(idx)
 
 
 class BalancedBatchSampler(Sampler):

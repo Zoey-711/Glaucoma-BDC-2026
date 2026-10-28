@@ -11,9 +11,9 @@
 管理员在本地创建受审 Git commit/tag 并记录 SHA256；朋友只检出指定 tag/commit，不运行工作区未提交的修改。部署前运行 `git status --porcelain`，应为空。Python 3.12、PyTorch 2.10.0、torchvision 0.25.0、CUDA 12.8 是官方 T4 环境目标；4090 训练机应记录自己的驱动和 torch CUDA 版本。
 
 ```bash
-git clone <经授权的私有仓库地址> glaucoma-bdc-2026
+git clone git@github.com:Zoey-711/Glaucoma-BDC-2026.git glaucoma-bdc-2026
 cd glaucoma-bdc-2026
-git checkout <管理员发布的固定 tag>
+git checkout phase3-platform-v0.2.0
 git rev-parse HEAD
 python3.12 -m venv .venv
 source .venv/bin/activate

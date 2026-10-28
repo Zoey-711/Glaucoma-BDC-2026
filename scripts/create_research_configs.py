@@ -58,7 +58,9 @@ def matrix():
         extra={**base['extra'],'block_reason':'No reviewed optic disc locator or validated reliability'})
     add('S04',status='BLOCKED',dependencies=['S03'],
         extra={**base['extra'],'block_reason':'Dual branch requires S03 ROI and local EfficientNet weights',
-               'modes':['global_only','local_only','dual_branch','probability_fusion']})
+               'modes':['global_only','local_only','dual_branch','probability_fusion'],
+               'branch_mode':'dual_branch','local_weights_manifest':'configs/weights_b02.local.json',
+               'require_roi':True})
     add('R01',augmentation={'horizontal_flip':True,'rotation':10,'color_jitter':.08})
     add('R02',augmentation={'horizontal_flip':True,'rotation':10,'blur_sigma':.6})
     add('R03',extra={**base['extra'],'mixup_alpha':.2})
@@ -80,6 +82,9 @@ def matrix():
     variant('R02','JPEG',augmentation={'horizontal_flip':True,'rotation':10,'jpeg_quality':75})
     variant('R02','NONE',augmentation={'horizontal_flip':False,'rotation':0})
     variant('R03','A04',extra={**base['extra'],'mixup_alpha':.4})
+    for suffix,mode in [('GLOBAL','global_only'),('LOCAL','local_only')]:
+        variant('S04',suffix,extra={**next(r for r in rows if r['experiment_id']=='S04')['extra'],
+            'branch_mode':mode})
     for eid,initialization in [('R04_DIRECT','imagenet_direct'),('R04_RANDOM_SSL','random_then_ssl_then_finetune')]:
         variant('R04',eid.removeprefix('R04_'),extra={**base['extra'],'ssl_method':'SimSiam','initialization':initialization,
             'block_reason':'Requires official-Train-only SSL source gate'})
