@@ -151,7 +151,7 @@ def run(cfg,root,train_manifest,val_manifest,*,smoke=False,resume=False,group_ma
         if cfg.experiment_id!='D01':raise ValueError('Teacher only in D01')
         from .distill import load_approved_teacher
         teacher=load_approved_teacher(teacher_path,cfg,device,train_manifest)
-    start_epoch=0;best=(-1.,-1.);stale=0;history=[]
+    start_epoch=0;best=(-1.,-1.);stale=0;history=[];overflow_streak=0
     if resume:
         ck=pre_resume
         model.load_state_dict(ck['model']);optimizer.load_state_dict(ck['optimizer']);scheduler.load_state_dict(ck['scheduler']);scaler.load_state_dict(ck['scaler'])
@@ -161,7 +161,7 @@ def run(cfg,root,train_manifest,val_manifest,*,smoke=False,resume=False,group_ma
     try:
         for epoch in range(start_epoch,cfg.epochs):
             train_ds.set_epoch(epoch);train_loader,sampler=loader(train_ds,cfg,True)
-            model.train();loss_total=0.;pair_total=0;seen=0
+            model.train();loss_total=0.;pair_total=0;seen=0;overflow_steps=0
             if device.type=='cuda':torch.cuda.reset_peak_memory_stats(device)
             epoch_start=time.perf_counter();optimizer.zero_grad(set_to_none=True)
             for step,(x,y,index) in enumerate(train_loader):
@@ -186,9 +186,17 @@ def run(cfg,root,train_manifest,val_manifest,*,smoke=False,resume=False,group_ma
                 end=(step+1)%cfg.gradient_accumulation==0 or step+1==len(train_loader)
                 if end:
                     scaler.unscale_(optimizer);norm=torch.nn.utils.clip_grad_norm_(model.parameters(),float(cfg.extra.get('grad_clip_norm',1.)))
-                    if not torch.isfinite(norm):raise FloatingPointError('Nonfinite gradient norm')
-                    old_scale=scaler.get_scale();scaler.step(optimizer);scaler.update()
-                    if scaler.get_scale()>=old_scale:scheduler.step()
+                    old_scale=scaler.get_scale()
+                    if not torch.isfinite(norm):
+                        if not scaler.is_enabled() or old_scale<=1:
+                            raise FloatingPointError('Nonfinite gradient norm without recoverable AMP scaling')
+                        # FP16 overflows are expected while GradScaler finds a safe scale.
+                        # GradScaler skips this optimizer step and lowers the scale.
+                        scaler.step(optimizer);scaler.update();overflow_steps+=1;overflow_streak+=1
+                        if overflow_streak>16:raise FloatingPointError('Persistent nonfinite AMP gradients')
+                    else:
+                        scaler.step(optimizer);scaler.update();overflow_streak=0
+                        if scaler.get_scale()>=old_scale:scheduler.step()
                     optimizer.zero_grad(set_to_none=True)
             if device.type=='cuda':torch.cuda.synchronize(device)
             train_seconds=time.perf_counter()-epoch_start
@@ -201,7 +209,8 @@ def run(cfg,root,train_manifest,val_manifest,*,smoke=False,resume=False,group_ma
                 fold_pred.to_csv(out/'oof_train.csv',index=False)
             row={'epoch':epoch+1,'train_loss':loss_total/seen,'train_seconds':train_seconds,
                  'train_peak_allocated_mib':peak_allocated,'train_peak_reserved_mib':peak_reserved,
-                 'effective_pair_count':pair_total,'lr':optimizer.param_groups[0]['lr'],**score}
+                 'effective_pair_count':pair_total,'amp_overflow_steps':overflow_steps,
+                 'lr':optimizer.param_groups[0]['lr'],**score}
             if sampler:row.update(sampler.last_stats)
             history.append(row)
             pd.DataFrame(history).to_csv(out/'train_history.csv',index=False)
