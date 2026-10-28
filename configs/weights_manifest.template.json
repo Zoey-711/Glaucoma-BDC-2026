@@ -1,0 +1,17 @@
+{
+  "status": "pending_review",
+  "model": "efficientnet_b0",
+  "dataset": "ImageNet-1K",
+  "medical_pretraining": false,
+  "source_url": "https://download.pytorch.org/models/efficientnet_b0_rwightman-7f5810bc.pth",
+  "training_description_url": "https://docs.pytorch.org/vision/0.25/models/generated/torchvision.models.efficientnet_b0.html",
+  "license_url": null,
+  "license_file": null,
+  "license_sha256": null,
+  "allows_competition_and_redistribution": false,
+  "non_commercial_or_gated": false,
+  "reviewer": null,
+  "review_date": null,
+  "path": null,
+  "sha256": null
+}

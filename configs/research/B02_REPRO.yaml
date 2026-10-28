@@ -1,0 +1,41 @@
+experiment_id: B02_REPRO
+parent_experiment_id: B02
+backbone: efficientnet_b0
+pretrained_source: https://huggingface.co/timm/efficientnet_b0.ra_in1k/resolve/1b5383e5f79cc0f7fc067e372f8f26a5fa73f26a/model.safetensors
+pretrained_sha256: d569899762ea9b1384ee07f4af64805cf8caa1c55f9253ebb1080dc40e87a2cd
+license: Apache-2.0
+weights_manifest: configs/weights_b02.local.json
+image_size: 224
+crop_policy: resize
+normalization: imagenet
+optimizer: AdamW
+backbone_lr: 0.0003
+head_lr: 0.0003
+weight_decay: 0.0001
+scheduler: cosine
+warmup: 0
+epochs: 30
+patience: 5
+loss:
+  name: bce
+sampler: shuffle
+augmentation:
+  horizontal_flip: true
+  rotation: 10
+batch_size: 32
+gradient_accumulation: 1
+seed: 42
+fold: null
+data_manifest_hash:
+  train: 33a59de6ac0ff6e415f46aab20d9073dbead660c3a3514bcf634ec84c620d6b0
+  val: 065a70213aeeff2dcf96b8df1eebef6ac5fdab6bea0f74e1686b3c3582cecc80
+  archive: 9f55b6c8f5a893ed0bc77af98e3a3efbfd2ae98fd0d1dd3151d66c94f2c5f910
+output_dir: results/B02_REPRO/seed_42/fold_none
+config_hash: 6d4a2b4b33125af43018d34d705b1ebd2e8a252cbb1c8bdbf4a3bac37568cf40
+git_commit: null
+status: PENDING
+dependencies: []
+extra:
+  num_workers: 4
+  torch_threads: 4
+  grad_clip_norm: 1.0

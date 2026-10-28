@@ -1,0 +1,54 @@
+seed: 42
+data:
+  train_csv: data/official/manifests/train.csv
+  val_csv: data/official/manifests/valid.csv
+  root: data/official
+  source: official
+model:
+  name: convnext_tiny
+  backend: torchvision
+  architecture: convnext_tiny
+  weights_manifest: null
+image_size: 384
+batch_size: 32
+num_workers: 6
+epochs: 30
+patience: 5
+lr: 0.0003
+weight_decay: 0.0001
+amp: true
+device: cuda
+threshold: 0.5
+output: outputs/runs/ConvNeXt-Tiny-384
+smoke: false
+loss:
+  name: bce
+sampler: shuffle
+augmentation: basic
+preprocess: resize
+cache: true
+torch_threads: 4
+log_every: 100
+experiment_id: ConvNeXt-Tiny-384
+plan:
+  stage: migration
+  kind: migration_draft
+  reference: B02
+  initial_status: blocked
+  factor: architecture_and_pretraining
+  reason: Review-only draft; implementation, provenance review, resource check and
+    explicit authorization required
+migration:
+  enabled: false
+  num_classes: 1
+  optimizer: AdamW
+  scheduler: CosineAnnealingLR
+  gradient_accumulation_steps: 1
+  effective_batch_size: 32
+  validation_precision: fp32
+  inference_batch_size: 1
+  weights_status: pending_new_review
+  paired_resolution_reference: ConvNeXt-Tiny-224
+  priority: 1
+  allow_cxr_checkpoint: false
+  allow_automatic_download: false

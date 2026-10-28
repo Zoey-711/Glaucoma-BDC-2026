@@ -1,0 +1,45 @@
+seed: 42
+data:
+  train_csv: F:\glaucoma-bdc-2026\data\official\manifests\train.csv
+  val_csv: F:\glaucoma-bdc-2026\data\official\manifests\valid.csv
+  root: F:\glaucoma-bdc-2026\data\official
+  source: official
+model:
+  name: efficientnet_b0
+  backend: timm
+  architecture: efficientnet_b0.ra_in1k
+  weights_manifest: configs/weights_b02.local.json
+image_size: 224
+batch_size: 32
+num_workers: 6
+epochs: 30
+patience: 5
+lr: 0.0003
+weight_decay: 0.0001
+amp: true
+device: cuda
+threshold: 0.5
+output: outputs/runs/F03
+smoke: false
+loss:
+  name: bce
+sampler: shuffle
+augmentation: basic
+preprocess: resize
+cache: true
+torch_threads: 4
+log_every: 100
+experiment_id: F03
+plan:
+  stage: F
+  kind: evaluate
+  reference: F01
+  factor: inference_strategy
+  initial_status: blocked
+  reason: Bind completed validation-selected candidates first
+selection:
+  method: multiseed
+  members: []
+  required_members: 3
+  tta:
+  - identity

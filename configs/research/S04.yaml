@@ -1,0 +1,48 @@
+experiment_id: S04
+parent_experiment_id: G01
+backbone: convnext_tiny
+pretrained_source: https://huggingface.co/timm/convnext_tiny.fb_in1k/resolve/b43a6303c9fcf176d2d707478a128c2c91e93528/model.safetensors
+pretrained_sha256: 08b9dc9c3a3a29421de7996761e176501896d1ae7fc3085cf56a643772329276
+license: Apache-2.0
+weights_manifest: configs/weights_g01.local.json
+image_size: 224
+crop_policy: resize
+normalization: imagenet
+optimizer: AdamW
+backbone_lr: 0.0003
+head_lr: 0.0003
+weight_decay: 0.0001
+scheduler: cosine
+warmup: 0
+epochs: 30
+patience: 5
+loss:
+  name: bce
+sampler: shuffle
+augmentation:
+  horizontal_flip: true
+  rotation: 10
+batch_size: 32
+gradient_accumulation: 1
+seed: 42
+fold: null
+data_manifest_hash:
+  train: 33a59de6ac0ff6e415f46aab20d9073dbead660c3a3514bcf634ec84c620d6b0
+  val: 065a70213aeeff2dcf96b8df1eebef6ac5fdab6bea0f74e1686b3c3582cecc80
+  archive: 9f55b6c8f5a893ed0bc77af98e3a3efbfd2ae98fd0d1dd3151d66c94f2c5f910
+output_dir: results/S04/seed_42/fold_none
+config_hash: be648964043b49f39c2ffce6be749c5119c1bf8eca5987f23f640c2a6ba32d62
+git_commit: null
+status: BLOCKED
+dependencies:
+- S03
+extra:
+  num_workers: 4
+  torch_threads: 4
+  grad_clip_norm: 1.0
+  block_reason: Dual branch requires S03 ROI and local EfficientNet weights
+  modes:
+  - global_only
+  - local_only
+  - dual_branch
+  - probability_fusion

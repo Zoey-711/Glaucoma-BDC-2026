@@ -1,0 +1,23 @@
+{
+  "status": "approved",
+  "model": "efficientnet_b0",
+  "backend": "timm",
+  "architecture": "efficientnet_b0.ra_in1k",
+  "dataset": "ImageNet-1K",
+  "medical_pretraining": false,
+  "source_url": "https://huggingface.co/timm/efficientnet_b0.ra_in1k/resolve/1b5383e5f79cc0f7fc067e372f8f26a5fa73f26a/model.safetensors",
+  "training_description_url": "https://huggingface.co/timm/efficientnet_b0.ra_in1k/resolve/1b5383e5f79cc0f7fc067e372f8f26a5fa73f26a/README.md",
+  "license_url": "https://www.apache.org/licenses/LICENSE-2.0.txt",
+  "license_file": "data/pretrained/efficientnet_b0.ra_in1k/LICENSE-2.0.txt",
+  "license_sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+  "model_card_file": "data/pretrained/efficientnet_b0.ra_in1k/MODEL_CARD.md",
+  "model_card_sha256": "37ff0cceacfdf24a7393c92be3a3a34ad1753f307c8a57562c0dda1a090e31c4",
+  "allows_competition_and_redistribution": true,
+  "non_commercial_or_gated": false,
+  "reviewer": "Codex: public model-card declaration + Apache-2.0 sections 2/4 + upstream SHA256",
+  "review_date": "2026-10-28",
+  "revision": "1b5383e5f79cc0f7fc067e372f8f26a5fa73f26a",
+  "path": "data/pretrained/efficientnet_b0.ra_in1k/model.safetensors",
+  "sha256": "d569899762ea9b1384ee07f4af64805cf8caa1c55f9253ebb1080dc40e87a2cd",
+  "review_basis": "Specific model card declares Apache-2.0 and ImageNet-1k; public ungated download verified. Retain license, attribution and modification notice. Final organizer review remains applicable."
+}

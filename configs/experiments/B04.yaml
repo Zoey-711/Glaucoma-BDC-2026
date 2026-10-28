@@ -1,0 +1,38 @@
+seed: 42
+data:
+  train_csv: F:\glaucoma-bdc-2026\data\official\manifests\train.csv
+  val_csv: F:\glaucoma-bdc-2026\data\official\manifests\valid.csv
+  root: F:\glaucoma-bdc-2026\data\official
+  source: official
+model:
+  name: efficientnet_b2
+  backend: timm
+  architecture: efficientnet_b2.ra_in1k
+  weights_manifest: configs/weights_b04.local.json
+image_size: 224
+batch_size: 32
+num_workers: 6
+epochs: 30
+patience: 5
+lr: 0.0003
+weight_decay: 0.0001
+amp: true
+device: cuda
+threshold: 0.5
+output: outputs/runs/B04
+smoke: false
+loss:
+  name: bce
+sampler: shuffle
+augmentation: basic
+preprocess: resize
+cache: true
+torch_threads: 4
+log_every: 100
+experiment_id: B04
+plan:
+  stage: B
+  kind: train
+  reference: B02
+  factor: backbone
+  initial_status: planned

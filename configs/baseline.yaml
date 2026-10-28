@@ -1,0 +1,21 @@
+seed: 2026
+data:
+  train_csv: null
+  val_csv: null
+  root: null
+  source: official
+model:
+  name: efficientnet_b0
+  weights_manifest: null
+image_size: 224
+batch_size: 32
+num_workers: 0
+epochs: 30
+patience: 5
+lr: 0.0003
+weight_decay: 0.0001
+amp: true
+device: cuda
+threshold: 0.5
+output: outputs/baseline
+smoke: false
