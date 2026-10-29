@@ -13,20 +13,20 @@
 ```bash
 git clone git@github.com:Zoey-711/Glaucoma-BDC-2026.git glaucoma-bdc-2026
 cd glaucoma-bdc-2026
-git checkout phase3-platform-v0.2.0
+git checkout phase3-platform-v0.3.0
 git rev-parse HEAD
 python3.12 -m venv .venv
 source .venv/bin/activate
 python -m pip install torch==2.10.0 torchvision==0.25.0 --index-url https://download.pytorch.org/whl/cu128
 python -m pip install -r requirements-research.txt
 python -m pytest -q
-python -m scripts.preflight_backbones --cases G02 G03 --use-config-batch
+python -m scripts.preflight_backbones --cases G03 --use-config-batch
 ```
 
 首次**只用合成数据**测试服务器；`scripts/smoke_research.py`会在 `outputs/research_smoke_v3/` 和 `results/SMOKE_RESEARCH_V3/` 写入随机模型及结果包，目录已存在时拒绝覆盖。完成一次即可，不重复运行同配置。可先运行队列 dry-run，查看缺少许可的任务为何阻塞：
 
 ```bash
-python -m scripts.gpu_queue --matrix configs/research/first_batch_8gpu.yaml
+python -m scripts.gpu_queue --matrix configs/research/after_local_g02.yaml
 ```
 
 ## 官方数据授权后的接入
@@ -36,26 +36,26 @@ python -m scripts.gpu_queue --matrix configs/research/first_batch_8gpu.yaml
 ```bash
 export OFFICIAL_ARCHIVE='<朋友合法持有的官方ZIP绝对路径>'
 python -m scripts.prepare_official --archive "$OFFICIAL_ARCHIVE" --destination data/official --report-dir outputs/official_ingest --config configs/official.local.yaml
-python -m scripts.gpu_queue --matrix configs/research/first_batch_8gpu.yaml --archive "$OFFICIAL_ARCHIVE"
+python -m scripts.gpu_queue --matrix configs/research/after_local_g02.yaml --archive "$OFFICIAL_ARCHIVE"
 ```
 
 配置中的 Train/Val 哈希采用按列名和行顺序规范化的内容哈希，不受 Windows/Linux 换行差异影响；ZIP SHA256 必须严格相同。所有训练必须使用原官方划分。新骨干的配置保持 `BLOCKED`，须先完成独立通用非医学权重的来源、许可证、再分发与SHA256审查；不能直接使用旧胸片 checkpoint。
 
-## 8 GPU 第一批执行
+## G02 完成后的剩余队列
 
 当 dry-run 仅对已满足条件任务显示 READY，且用户明确批准所选任务后运行：
 
 ```bash
-python -m scripts.gpu_queue --matrix configs/research/first_batch_8gpu.yaml --archive "$OFFICIAL_ARCHIVE" --execute
+python -m scripts.gpu_queue --matrix configs/research/after_local_g02.yaml --archive "$OFFICIAL_ARCHIVE" --status-file outputs/research_queue/after_local_g02.json --execute
 ```
 
-调度器为 GPU0–GPU7 各启动最多一个独立进程，设置对应 `CUDA_VISIBLE_DEVICES`，并在 `outputs/research_queue/status.json` 记录状态。每个任务写入唯一 `results/<实验ID>/seed_42/fold_none/`；已有完整或部分结果不覆盖，只有带 `last.pth` 且配置/数据/代码哈希完全一致时可恢复。失败任务与其他 GPU 隔离。默认队列：GPU0 G02、GPU1 G03、GPU2 G05、GPU3 G07、GPU4 L03、GPU5 S01、GPU6 R01、GPU7 G01_REPRO。**G05/G07 在新权重审查完成前会显示 BLOCKED，绝不会启动。**
+调度器为每张 GPU 各启动最多一个独立进程，设置对应 `CUDA_VISIBLE_DEVICES`，并在 `outputs/research_queue/after_local_g02.json` 记录状态。每个任务写入唯一 `results/<实验ID>/seed_42/fold_none/`；已有完整或部分结果不覆盖，只有带 `last.pth` 且配置/数据/代码哈希完全一致时可恢复。失败任务与其他 GPU 隔离。G02 已在本机完成，GPU0 暂时空闲；剩余队列为 GPU1 G03、GPU2 G05、GPU3 G07、GPU4 L03、GPU5 S01、GPU6 R01、GPU7 G01_REPRO。**G05/G07 在新权重审查完成前会显示 BLOCKED，绝不会启动。**
 
 单独任务命令（仅获得授权且前置核验通过时执行）：
 
 ```bash
-CUDA_VISIBLE_DEVICES=0 python -m scripts.run_research --config configs/research/G02.yaml --archive "$OFFICIAL_ARCHIVE"
-CUDA_VISIBLE_DEVICES=0 python -m scripts.run_research --config configs/research/G02.yaml --archive "$OFFICIAL_ARCHIVE" --resume
+CUDA_VISIBLE_DEVICES=1 python -m scripts.run_research --config configs/research/G03.yaml --archive "$OFFICIAL_ARCHIVE"
+CUDA_VISIBLE_DEVICES=1 python -m scripts.run_research --config configs/research/G03.yaml --archive "$OFFICIAL_ARCHIVE" --resume
 ```
 
 完成后按 [RESULT_CONTRACT.md](RESULT_CONTRACT.md) 校验并打包结果。只回传经过授权允许共享的结果包；不通过 Git 提交数据、模型或原图。机器上独立保存 CUDA/驱动环境和 4090 本地测速，不能写成 T4 认证。

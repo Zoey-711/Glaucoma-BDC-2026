@@ -1,0 +1,10 @@
+schema: glaucoma_research_queue_v1
+# G02 was completed locally on 2026-10-29; GPU0 is intentionally idle.
+tasks:
+  - {experiment_id: G03, config: configs/research/G03.yaml, gpu: 1, depends_on: []}
+  - {experiment_id: G05, config: configs/research/G05.yaml, gpu: 2, depends_on: []}
+  - {experiment_id: G07, config: configs/research/G07.yaml, gpu: 3, depends_on: []}
+  - {experiment_id: L03, config: configs/research/L03.yaml, gpu: 4, depends_on: []}
+  - {experiment_id: S01, config: configs/research/S01.yaml, gpu: 5, depends_on: []}
+  - {experiment_id: R01, config: configs/research/R01.yaml, gpu: 6, depends_on: []}
+  - {experiment_id: G01_REPRO, config: configs/research/G01_REPRO.yaml, gpu: 7, depends_on: []}

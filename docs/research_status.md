@@ -1,10 +1,10 @@
-# Phase 3 实现与运行状态（2026-10-28）
+# Phase 3 实现与运行状态（2026-10-29）
 
-本表中的 `TESTED` 指代码经合成输入、单元测试或抽样 QC 验证；它不是正式训练成绩。`READY` 指代码具备启动条件，仍需固定 Git 版本、合法持有官方数据、通过权重和服务器前置检查。`BLOCKED` 不会被调度器启动。没有新实验的官方 Val AUROC、T4 延迟或 4090 正式训练显存数值。
+本表中的 `TESTED` 指代码经合成输入、单元测试或抽样 QC 验证；它不是正式训练成绩。`READY` 指代码具备启动条件，仍需固定 Git 版本、合法持有官方数据、通过权重和服务器前置检查。`BLOCKED` 不会被调度器启动。G02 已在本机完成正式训练；其余新实验没有官方 Val 成绩。目前没有 T4 延迟或 4090 正式训练显存数值。
 
 | ID | 实现状态 | 测试证据 | 正式运行依赖或阻塞 |
 |---|---|---|---|
-| G02 ConvNeXt-Tiny-384 | IMPLEMENTED, TESTED | 384 输入、单 logit、反向传播、4060 batch1 显存 | 已核验 G01 通用权重；服务器需按配置 batch 复核 |
+| G02 ConvNeXt-Tiny-384 | IMPLEMENTED, TESTED, COMPLETED | RTX 4060 batch32 完整 8 epoch；Val AUROC 0.982912、AUPRC 0.781187；[报告](G02_experiment_report.md) | 已完成；禁止同配置重复训练 |
 | G03 EfficientNet-B0-384 | IMPLEMENTED, TESTED | 同上 | 已核验 B02 通用权重；batch 复核 |
 | G04 ConvNeXt-Tiny-512 | IMPLEMENTED, TESTED | 512 输入及反向传播 | 16×2 有效 batch；与 G02 比较前须增加匹配的 16×2 对照 |
 | G05 EfficientNetV2-S-384 | IMPLEMENTED, TESTED, BLOCKED | 随机初始化合成反向传播 | 独立非医学权重、许可证和 SHA256 尚未核验 |

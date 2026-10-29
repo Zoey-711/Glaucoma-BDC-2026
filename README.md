@@ -1,6 +1,6 @@
 # glaucoma-bdc-2026
 
-Phase 3 研究工程：20 组主实验配置、6 组复核/部署配置、统一 Trainer、8 GPU 队列、结果包验收与合成 Smoke Test 已接入。实际可运行程度与阻塞原因逐组见 [研究状态表](docs/research_status.md)，服务器命令见 [朋友训练指南](FRIEND_TRAINING_GUIDE.md)，交付文件见 [结果契约](RESULT_CONTRACT.md)。本阶段没有启动新的官方数据正式训练，也没有 T4 实测。
+Phase 3 研究工程：20 组主实验配置、6 组复核/部署配置、统一 Trainer、8 GPU 队列、结果包验收与合成 Smoke Test 已接入。G02 ConvNeXt-Tiny-384 已在本机完成，官方 Val AUROC **0.982912**、AUPRC **0.781187**，详见 [G02 完整实验报告](docs/G02_experiment_report.md)。逐组状态见 [研究状态表](docs/research_status.md)，服务器命令见 [朋友训练指南](FRIEND_TRAINING_GUIDE.md)，交付文件见 [结果契约](RESULT_CONTRACT.md)。目前没有 T4 实测。
 
 协作者请先读 [第一批 8 GPU 任务单](FRIEND_TASKS.md)：逐卡说明需要训练什么、何时不能运行、每个实验需要交付哪些文件。
 

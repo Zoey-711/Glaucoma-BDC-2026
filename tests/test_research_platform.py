@@ -24,7 +24,9 @@ def test_matrix_and_frozen_config_contract():
     assert {c['experiment_id'] for c in groups}=={*(f'G{i:02d}' for i in range(2,10)),
         *(f'L{i:02d}' for i in range(1,5)),*(f'S{i:02d}' for i in range(1,5)),*(f'R{i:02d}' for i in range(1,5))}
     for path in Path('configs/research').glob('*.yaml'):
-        if path.name=='first_batch_8gpu.yaml':continue
+        if yaml.safe_load(path.read_text(encoding='utf-8')).get('schema')=='glaucoma_research_queue_v1':
+            load_matrix(path)
+            continue
         ExperimentConfig.load(path)
     base=ExperimentConfig.load('configs/research/G02.yaml')
     broken=dataclasses.replace(base,image_size=512)
