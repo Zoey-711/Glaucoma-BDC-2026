@@ -1,5 +1,7 @@
 # glaucoma-bdc-2026
 
+M02d 与 L03b 已完成并验收。M02d 零年龄占位消融 AUROC **0.982597**、AUPRC **0.803863**；真实年龄相对占位的 ΔAUROC **+0.000285**，95% CI **[−0.000256, +0.000813]**，未证明年龄有效。L03b（BCE + 0.05 × Pairwise）最佳 epoch **7**，AUROC **0.983426**、AUPRC **0.767908**；相对 G01 的 ΔAUROC **−0.000136**，95% CI **[−0.003779, +0.004021]**，未证明排序收益。详见 [M02d 消融报告](docs/M02d_ablation_report.md)与 [L03b 实验报告](docs/L03b_experiment_report.md)。65 项测试通过，完整 Val 指标独立复算、结果哈希及 127 个冻结文件核验通过。L03c、五折及新官方提交均未启动。
+
 最新 M02 年龄融合实验已完成：冻结 G01 图像特征 + 年龄 MLP 的 Val AUROC **0.982882**、AUPRC **0.802841**；相对 G01 的 ΔAUROC **−0.000680**，配对 95% CI **[−0.002415, +0.001001]**。本次没有证明融合优于 G01，暂不扩大到多折多模态训练。年龄质量审计、Train 内部选型、分层指标、鲁棒性与 4060 测速见 [M02 实验报告](docs/M02_experiment_report.md)。原有模型与 Round 01 保持冻结。
 
 Phase 3 研究工程：20 组主实验配置、6 组复核/部署配置、统一 Trainer、8 GPU 队列、结果包验收与合成 Smoke Test 已接入。G02 ConvNeXt-Tiny-384 已在本机完成，官方 Val AUROC **0.982912**、AUPRC **0.781187**，详见 [G02 完整实验报告](docs/G02_experiment_report.md)。逐组状态见 [研究状态表](docs/research_status.md)，服务器命令见 [朋友训练指南](FRIEND_TRAINING_GUIDE.md)，交付文件见 [结果契约](RESULT_CONTRACT.md)。目前没有 T4 实测。
