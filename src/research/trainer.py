@@ -20,6 +20,7 @@ from src.utils import seed_everything, sha256, write_json
 from .data import BalancedBatchSampler,ImageDataset,DualImageDataset,load_official
 from .losses import BinaryObjective,bernoulli_kl
 from .models import make_model,split_parameters
+from .config import ExperimentConfig
 
 
 def utc():return datetime.now(timezone.utc).isoformat()
@@ -29,6 +30,7 @@ def loader(ds,cfg,train=False):
     workers=int(cfg.extra.get('num_workers',0))
     if train and cfg.sampler=='balanced':
         sampler=BalancedBatchSampler(ds.frame.label,cfg.batch_size,cfg.seed)
+        sampler.set_epoch(ds.epoch)
         return DataLoader(ds,batch_sampler=sampler,num_workers=workers,pin_memory=True),sampler
     return DataLoader(ds,batch_size=cfg.batch_size,shuffle=train,num_workers=workers,pin_memory=True,
                       generator=torch.Generator().manual_seed(cfg.seed+ds.epoch)),None
@@ -90,6 +92,7 @@ def save_checksums(directory):
 def run(cfg,root,train_manifest,val_manifest,*,smoke=False,resume=False,group_manifest=None,teacher_path=None):
     if cfg.status=='BLOCKED':raise ValueError('Experiment explicitly blocked')
     if not smoke:
+        cfg.assert_execution_policy()
         cfg.assert_code()
         if not (cfg.extra.get('ssl_initialization')=='random_then_ssl_then_finetune' and cfg.extra.get('ssl_encoder_checkpoint')):
             cfg.assert_pretraining()
@@ -182,7 +185,7 @@ def run(cfg,root,train_manifest,val_manifest,*,smoke=False,resume=False,group_ma
                     loss=loss/group_size
                 if not torch.isfinite(loss):raise FloatingPointError('Nonfinite training loss')
                 scaler.scale(loss).backward();pair_total+=objective.last_pairs
-                loss_total+=float(loss.detach())*len(y)*cfg.gradient_accumulation;seen+=len(y)
+                loss_total+=float(loss.detach())*len(y)*group_size;seen+=len(y)
                 end=(step+1)%cfg.gradient_accumulation==0 or step+1==len(train_loader)
                 if end:
                     scaler.unscale_(optimizer);norm=torch.nn.utils.clip_grad_norm_(model.parameters(),float(cfg.extra.get('grad_clip_norm',1.)))
@@ -206,7 +209,6 @@ def run(cfg,root,train_manifest,val_manifest,*,smoke=False,resume=False,group_ma
             if oof_frame is not None:
                 fold_ds=(dataset_type(oof_frame,cfg,local_cfg,locator,False) if is_dual else dataset_type(oof_frame,cfg,False))
                 fold_pred,fold_score=evaluate(model,fold_ds,cfg,device,'train_oof')
-                fold_pred.to_csv(out/'oof_train.csv',index=False)
             row={'epoch':epoch+1,'train_loss':loss_total/seen,'train_seconds':train_seconds,
                  'train_peak_allocated_mib':peak_allocated,'train_peak_reserved_mib':peak_reserved,
                  'effective_pair_count':pair_total,'amp_overflow_steps':overflow_steps,
@@ -218,6 +220,8 @@ def run(cfg,root,train_manifest,val_manifest,*,smoke=False,resume=False,group_ma
             key=(score['auroc'],score['auprc'])
             if key>best:
                 best=key;stale=0
+                if oof_frame is not None:
+                    fold_pred.to_csv(out/'oof_train.csv',index=False)
                 torch.save({'state_dict':{k:v.cpu() for k,v in model.state_dict().items()},
                     'config':cfg.as_dict(),'metrics':score,'epoch':epoch+1,'provenance':cfg.weights_manifest,
                     'smoke':smoke},out/'best.pth')

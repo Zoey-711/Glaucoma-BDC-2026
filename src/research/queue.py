@@ -9,7 +9,7 @@ from pathlib import Path
 
 import yaml
 
-from src.utils import write_json
+from src.utils import write_json,sha256
 from .config import ExperimentConfig,git_commit
 
 
@@ -36,6 +36,8 @@ def load_matrix(path):
 
 def preflight(task,completed,archive=None,allow_uncommitted=False):
     cfg=ExperimentConfig.load(task['config'])
+    try:cfg.assert_execution_policy()
+    except ValueError as exc:return f'BLOCKED: {exc}'
     if cfg.status=='BLOCKED':return f"BLOCKED: {cfg.extra.get('block_reason','config blocked')}"
     missing=[x for x in task.get('depends_on',[]) if x not in completed]
     if missing:return 'BLOCKED: dependencies not completed: '+','.join(missing)
@@ -49,22 +51,29 @@ def preflight(task,completed,archive=None,allow_uncommitted=False):
     if archive is None:return 'BLOCKED: official archive path/hash not supplied'
     try:cfg.assert_data('data/official/manifests/train.csv','data/official/manifests/valid.csv',archive)
     except Exception as exc:return f'BLOCKED: data version: {exc}'
-    if not allow_uncommitted and not git_commit():return 'BLOCKED: no published Git commit'
+    if not allow_uncommitted:
+        from dataclasses import replace
+        try:replace(cfg,git_commit=git_commit()).assert_code()
+        except ValueError as exc:return f'BLOCKED: code version: {exc}'
     return None
 
 
 def run_queue(matrix_path,archive=None,dry_run=True,status_file='outputs/research_queue/status.json',retry_failed=False):
     plan=load_matrix(matrix_path);tasks=list(plan['tasks']);status_path=Path(status_file)
+    identity={'matrix_sha256':sha256(matrix_path),
+              'configs':{t['experiment_id']:ExperimentConfig.load(t['config']).identity() for t in tasks},
+              'git_commit':git_commit()}
     if status_path.exists():
         status=json.loads(status_path.read_text(encoding='utf-8'))
         if status['matrix']!=str(matrix_path):raise ValueError('Status belongs to another matrix')
+        if status.get('identity')!=identity:raise ValueError('Queue matrix/config/code changed; preserve old status and use a new status file')
         if not dry_run:
             for eid,row in status['tasks'].items():
                 if row['status']=='RUNNING':
                     row.update(status='BLOCKED',detail='Previous scheduler exited while task was running; inspect child PID and output before retry')
                 elif retry_failed and row['status']=='FAILED':
                     row.update(status='PENDING',detail='Explicit retry requested; checkpoint and versions rechecked before launch')
-    else:status={'matrix':str(matrix_path),'created_utc':utc(),'tasks':{t['experiment_id']:{'status':'PENDING'} for t in tasks},'events':[]}
+    else:status={'matrix':str(matrix_path),'identity':identity,'created_utc':utc(),'tasks':{t['experiment_id']:{'status':'PENDING'} for t in tasks},'events':[]}
     running={};completed={eid for eid,row in status['tasks'].items() if row['status']=='COMPLETED'}
     def update(eid,state,detail=None,gpu=None,pid=None):
         if state not in STATES:raise ValueError('Invalid state')

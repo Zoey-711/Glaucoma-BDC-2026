@@ -1,5 +1,7 @@
 # glaucoma-bdc-2026
 
+S01-v2 已完成并验收：最佳 epoch 5，Val AUROC **0.981368**、AUPRC **0.789361**，相对 G01 的 ΔAUROC **−0.002194**，95% CI **[−0.007120, +0.002507]**，未证明收益。4060 端到端 **102.98ms**，不是 T4 成绩。Train 51,396 张 QC、160 张分层对照及已知暗弱外周回归通过；详细结果见 [S01-v2 报告](docs/S01_v2_experiment_report.md)。下方 S01 BLOCKED 状态特指保留的 v1。朋友服务器请使用更新后的 [任务单](FRIEND_TASKS.md)，旧队列不再作为待执行授权。
+
 正式赛规审计见[审计报告](docs/final_compliance_audit.md)和[逐项证据表](docs/final_compliance_evidence.md)。当前尚无官方 T4 实测；旧版合规 XLSX 与实际 B02 权重不符，旧 S01 多 GPU 队列未继承已失败的 QC 门禁，提交前须处理。
 
 S01 裁切 QC 已完成，**当前 BLOCKED，未启动正式训练**：审计官方 Train 51,396 张，生成 120 张前后对照并额外复核 12 张极端候选。55.65% 可裁切、1.18% 检测回退；但极暗图 `train_05402.jpg` 存在外周截断风险，不能仅凭普通联系表判定安全。73 项测试和真实 Train Smoke Test 通过，仍需先修正规则、重新通过 QC。详见 [S01 审计报告](docs/S01_experiment_report.md)。

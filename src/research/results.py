@@ -35,6 +35,8 @@ def validate_result(directory,official_val,expected_config=None,freeze_inventory
     cfg=ExperimentConfig.load(root/'config.yaml')
     expected=ExperimentConfig.load(expected_config) if expected_config else cfg
     if cfg.identity()!=expected.identity():raise ValueError('Config version mismatch')
+    if expected.git_commit is not None and cfg.git_commit!=expected.git_commit:
+        raise ValueError('Expected Git commit mismatch')
     meta=json.loads((root/'run_manifest.json').read_text(encoding='utf-8'))
     if meta.get('schema')!=VERSION or meta.get('status')!='COMPLETED' or meta.get('config_hash')!=cfg.identity() or meta.get('git_commit')!=cfg.git_commit:
         raise ValueError('Manifest status/config/code mismatch')
@@ -57,7 +59,7 @@ def validate_result(directory,official_val,expected_config=None,freeze_inventory
     score=metrics(pred.Label,p)
     reported=json.loads((root/'metrics.json').read_text(encoding='utf-8'))
     for key in ['auroc','auprc','recall','specificity']:
-        if abs(score[key]-reported[key])>1e-8:raise ValueError(f'Metric mismatch: {key}')
+        if not np.isfinite(reported[key]) or abs(score[key]-reported[key])>1e-8:raise ValueError(f'Metric mismatch: {key}')
     history=pd.read_csv(root/'train_history.csv')
     if reported['best_epoch'] not in set(history.epoch):raise ValueError('Best epoch absent from history')
     if freeze_inventory:

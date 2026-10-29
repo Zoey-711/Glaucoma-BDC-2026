@@ -86,6 +86,7 @@ def test_queue_launches_one_process_per_eight_gpus_without_collision(monkeypatch
             if self.polls==1:return None
             active.remove(self.device);return 0
     monkeypatch.setattr(queue,'preflight',lambda task,completed,archive:None)
+    monkeypatch.setattr(queue,'git_commit',lambda:'synthetic-test-commit')
     monkeypatch.setattr(queue.subprocess,'Popen',FakeProcess)
     monkeypatch.setattr(queue.time,'sleep',lambda _:None)
     result=queue.run_queue('configs/research/first_batch_8gpu.yaml',archive='synthetic',dry_run=False,

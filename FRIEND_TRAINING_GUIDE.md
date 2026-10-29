@@ -1,61 +1,42 @@
-# 8×RTX 4090 训练机执行指南
+﻿# Linux 服务器执行指南
 
-每组实验的实现、测试和阻塞状态见 [research_status.md](docs/research_status.md)。本机只有 RTX 4060，尚未在 8×4090 或 T4 上执行正式实验。
+任务范围见 FRIEND_TASKS.md。本次只修复发布工程，不自动授权正式训练。主办方对协作者身份和数据访问未确认前仅做合成测试。比赛图像、标注、权重和结果包不进入 Git。
 
-已公开审查过的 G01/B02 权重来源模板位于 `configs/weights_templates/`。朋友须自行合法取得对应非医学 ImageNet 权重和许可证、模型卡文件，核对模板中的每个 SHA256，并把模板复制为 `configs/weights_g01.local.json`、`configs/weights_b02.local.json`。这些本地文件与权重均不进入 Git；缺失或哈希不符时队列保持 BLOCKED。
+## 固定版本
 
-本仓库只发布代码和配置，不包含比赛数据、训练权重或提交 CSV。必须先确认朋友本人符合赛事参与身份，并取得主办方允许其访问、存放和使用官方数据的依据；**未确认前仅运行合成数据 smoke，不传输官方图像或标签**。服务器 GPU 4090 的延迟只作本地初筛，最终 T4 验收另行进行。
-
-## 固定版本与环境
-
-管理员在本地创建受审 Git commit/tag 并记录 SHA256；朋友只检出指定 tag/commit，不运行工作区未提交的修改。部署前运行 `git status --porcelain`，应为空。Python 3.12、PyTorch 2.10.0、torchvision 0.25.0、CUDA 12.8 是官方 T4 环境目标；4090 训练机应记录自己的驱动和 torch CUDA 版本。
+不要继续用旧 phase3-platform-v0.3.0。负责人提供本次发布的完整 RELEASE_COMMIT；等旧任务结束后在独立 checkout 检出，不能更新正在训练的工作树。
 
 ```bash
-git clone git@github.com:Zoey-711/Glaucoma-BDC-2026.git glaucoma-bdc-2026
-cd glaucoma-bdc-2026
-git checkout phase3-platform-v0.3.0
-git rev-parse HEAD
+git fetch origin
+git checkout --detach "$RELEASE_COMMIT"
+test "$(git rev-parse HEAD)" = "$RELEASE_COMMIT"
+test -z "$(git status --porcelain)"
 python3.12 -m venv .venv
 source .venv/bin/activate
 python -m pip install torch==2.10.0 torchvision==0.25.0 --index-url https://download.pytorch.org/whl/cu128
 python -m pip install -r requirements-research.txt
-python -m pytest -q
-python -m scripts.preflight_backbones --cases G03 --use-config-batch
+python -m pytest tests/test_server_review.py -q
+python -m scripts.smoke_research
 ```
 
-首次**只用合成数据**测试服务器；`scripts/smoke_research.py`会在 `outputs/research_smoke_v3/` 和 `results/SMOKE_RESEARCH_V3/` 写入随机模型及结果包，目录已存在时拒绝覆盖。完成一次即可，不重复运行同配置。可先运行队列 dry-run，查看缺少许可的任务为何阻塞：
+RELEASE_COMMIT 必须由负责人给出。Smoke 已有输出拒绝覆盖，首次执行一次即可。test_server_review.py 用临时合成图像验证训练、恢复、打包、导入和篡改拒绝，不依赖历史本地资产。全套历史测试有本地资产依赖，新服务器不能直接复现全部测试。
+
+## 授权后接入
+
+从自己的合法渠道取得官方 ZIP。configs/weights_templates/ 给出已审核 B0/ConvNeXt 的通用 ImageNet 来源；自行下载核验全部 SHA256、许可证及模型卡，创建 configs/weights_b02.local.json 与 configs/weights_g01.local.json。G05/G07 权重未审完，不修改状态绕过。
 
 ```bash
-python -m scripts.gpu_queue --matrix configs/research/after_local_g02.yaml
-```
-
-## 官方数据授权后的接入
-
-朋友应通过自己的合法渠道取得官方 ZIP，设置其真实本地路径。不要从本项目聊天或 Git 传输官方数据。接入脚本只在该机器本地解压并审计；同名目标存在时拒绝覆盖。
-
-```bash
-export OFFICIAL_ARCHIVE='<朋友合法持有的官方ZIP绝对路径>'
+export OFFICIAL_ARCHIVE='<合法官方 ZIP 实际绝对路径>'
 python -m scripts.prepare_official --archive "$OFFICIAL_ARCHIVE" --destination data/official --report-dir outputs/official_ingest --config configs/official.local.yaml
-python -m scripts.gpu_queue --matrix configs/research/after_local_g02.yaml --archive "$OFFICIAL_ARCHIVE"
+python -m scripts.gpu_queue --matrix configs/research/server_reviewed.yaml --archive "$OFFICIAL_ARCHIVE"
 ```
 
-配置中的 Train/Val 哈希采用按列名和行顺序规范化的内容哈希，不受 Windows/Linux 换行差异影响；ZIP SHA256 必须严格相同。所有训练必须使用原官方划分。新骨干的配置保持 `BLOCKED`，须先完成独立通用非医学权重的来源、许可证、再分发与SHA256审查；不能直接使用旧胸片 checkpoint。
-
-## G02 完成后的剩余队列
-
-当 dry-run 仅对已满足条件任务显示 READY，且用户明确批准所选任务后运行：
+READY 只代表工程检查满足，不代表赛事或负责人授权。清单内容哈希、原始 ZIP SHA256 必须一致，不修改官方 Train/Val。任务许可与增强 QC 确认后才执行：
 
 ```bash
-python -m scripts.gpu_queue --matrix configs/research/after_local_g02.yaml --archive "$OFFICIAL_ARCHIVE" --status-file outputs/research_queue/after_local_g02.json --execute
+python -m scripts.gpu_queue --matrix configs/research/server_reviewed.yaml --archive "$OFFICIAL_ARCHIVE" --status-file outputs/research_queue/server_reviewed.json --execute
 ```
 
-调度器为每张 GPU 各启动最多一个独立进程，设置对应 `CUDA_VISIBLE_DEVICES`，并在 `outputs/research_queue/after_local_g02.json` 记录状态。每个任务写入唯一 `results/<实验ID>/seed_42/fold_none/`；已有完整或部分结果不覆盖，只有带 `last.pth` 且配置/数据/代码哈希完全一致时可恢复。失败任务与其他 GPU 隔离。G02 已在本机完成，GPU0 暂时空闲；剩余队列为 GPU1 G03、GPU2 G05、GPU3 G07、GPU4 L03、GPU5 S01、GPU6 R01、GPU7 G01_REPRO。**G05/G07 在新权重审查完成前会显示 BLOCKED，绝不会启动。**
+一 GPU 一个进程，依赖未完成不启动。状态文件绑定矩阵、配置及代码版本；版本变化时保留旧状态并使用新文件。恢复必须有 last.pth，且配置/数据/代码一致；COMPLETED 不可重跑。单独训练入口同样有退休实验与旧 FOV 门禁。
 
-单独任务命令（仅获得授权且前置核验通过时执行）：
-
-```bash
-CUDA_VISIBLE_DEVICES=1 python -m scripts.run_research --config configs/research/G03.yaml --archive "$OFFICIAL_ARCHIVE"
-CUDA_VISIBLE_DEVICES=1 python -m scripts.run_research --config configs/research/G03.yaml --archive "$OFFICIAL_ARCHIVE" --resume
-```
-
-完成后按 [RESULT_CONTRACT.md](RESULT_CONTRACT.md) 校验并打包结果。只回传经过授权允许共享的结果包；不通过 Git 提交数据、模型或原图。机器上独立保存 CUDA/驱动环境和 4090 本地测速，不能写成 T4 认证。
+按任务单验收完整结果包。Linux/8×4090 尚待朋友实际 Smoke，不能将本机 Windows 测试冒充远端实测。4090 延迟仅作初筛，最终需官方 T4 环境验收。

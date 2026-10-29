@@ -102,6 +102,13 @@ class ExperimentConfig:
         r = subprocess.run(['git','status','--porcelain','--untracked-files=no'], capture_output=True,text=True)
         if r.stdout.strip(): raise ValueError('Tracked code changed since pinned commit')
 
+    def assert_execution_policy(self):
+        # Applies to both direct CLI and queue; historical YAML cannot bypass QC.
+        if self.crop_policy == 'fov':
+            raise ValueError('Legacy research FOV has no accepted safety QC; local S01-v2 is a separate implementation')
+        if self.experiment_id in {'G02','G04','G09','L03','L03_LAMBDA0','L03_LAMBDA02'}:
+            raise ValueError('Experiment retired from server execution after local results; explicit new protocol required')
+
     def assert_pretraining(self):
         if not self.weights_manifest:
             raise ValueError('Reviewed nonmedical weight manifest is required')
