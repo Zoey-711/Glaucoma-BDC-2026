@@ -1,5 +1,7 @@
 # glaucoma-bdc-2026
 
+R01b 轻度颜色增强已完成：G01 同配置下仅增加训练期 ColorJitter，Val AUROC **0.983430**、AUPRC **0.796771**，相对 G01 ΔAUROC **−0.000132**，配对 95% CI **[−0.004268, +0.003473]**，未证明收益。最佳 epoch 9，4060 端到端 **102.87ms**；详见 [R01b 实验报告](docs/R01b_experiment_report.md)。没有 T4 实测，也未启动 R01c/R02。
+
 S01-v2 已完成并验收：最佳 epoch 5，Val AUROC **0.981368**、AUPRC **0.789361**，相对 G01 的 ΔAUROC **−0.002194**，95% CI **[−0.007120, +0.002507]**，未证明收益。4060 端到端 **102.98ms**，不是 T4 成绩。Train 51,396 张 QC、160 张分层对照及已知暗弱外周回归通过；详细结果见 [S01-v2 报告](docs/S01_v2_experiment_report.md)。下方 S01 BLOCKED 状态特指保留的 v1。朋友服务器请使用更新后的 [任务单](FRIEND_TASKS.md)，旧队列不再作为待执行授权。
 
 正式赛规审计见[审计报告](docs/final_compliance_audit.md)和[逐项证据表](docs/final_compliance_evidence.md)。当前尚无官方 T4 实测；旧版合规 XLSX 与实际 B02 权重不符，旧 S01 多 GPU 队列未继承已失败的 QC 门禁，提交前须处理。
