@@ -17,10 +17,9 @@ class BinaryObjective(nn.Module):
         if name in {'bce','weighted_bce','pairwise_auc'}:
             loss=F.binary_cross_entropy_with_logits(logits,targets,pos_weight=self.pos_weight)
             if name!='pairwise_auc':return loss
-            positive=logits[targets>.5];negative=logits[targets<=.5]
-            self.last_pairs=positive.numel()*negative.numel()
+            from src.pairwise import ranking_term
+            ranking,self.last_pairs=ranking_term(logits,targets)
             if not self.last_pairs:return loss
-            ranking=F.softplus(negative[None,:]-positive[:,None]).mean()
             return loss+float(self.spec.get('lambda',0))*ranking
         if name=='focal':
             gamma=float(self.spec.get('gamma',2));alpha=float(self.spec.get('alpha',.25))

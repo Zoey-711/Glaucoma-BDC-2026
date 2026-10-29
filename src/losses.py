@@ -20,6 +20,9 @@ class BinaryLoss(torch.nn.Module):
         logits, y = logits.float(), y.float()  # Stable logarithms/clipping under AMP.
         c, name = self.config, self.config['name']
         if name == 'bce': return F.binary_cross_entropy_with_logits(logits, y)
+        if name == 'pairwise_auc':
+            from .pairwise import bce_pairwise
+            return bce_pairwise(logits, y, c['lambda'])
         if name == 'weighted_bce': return F.binary_cross_entropy_with_logits(logits, y, pos_weight=self.pos_weight)
         bce = F.binary_cross_entropy_with_logits(logits, y, reduction='none')
         if name == 'class_balanced': return (bce * self.class_weights[y.long()]).mean()

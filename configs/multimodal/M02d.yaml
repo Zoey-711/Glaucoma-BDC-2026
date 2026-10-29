@@ -1,0 +1,10 @@
+experiment_id: M02d
+reference: M02c
+protocol: configs/multimodal/M02_protocol.yaml
+image_features: frozen_G01_768
+age_input: zeros
+placeholder: [0.0, 0.0]
+seed: 42
+selection: repeat_identical_internal_split_and_candidate_grid_then_refit_Train
+official_val_used_for_selection: false
+output: results/M02d/seed_42/fold_none

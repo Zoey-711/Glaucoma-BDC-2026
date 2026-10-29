@@ -102,7 +102,10 @@ class M02Predictor:
             self.head.to(self.device).eval().requires_grad_(False)
             self.transform = transform(224, train=False, preprocess='resize')
             self.mode = 'fusion'
-        self.processor = AgePreprocessor(**obj['age_preprocessing'])
+        self.age_input = obj.get('age_input', 'real')
+        if self.age_input not in {'real', 'zeros'}:
+            raise ValueError('Unknown age input policy')
+        self.processor = AgePreprocessor(**obj['age_preprocessing']) if self.age_input == 'real' else None
         self.metadata = {'checkpoint_sha256': sha256(self.path), 'model_bytes': self.path.stat().st_size,
                          'precision': 'fp32', 'batch_size': 1, 'age_lookup_in_timer': True,
                          'gpu': torch.cuda.get_device_name(self.device) if self.device.type == 'cuda' else None}
@@ -111,13 +114,18 @@ class M02Predictor:
         if self.device.type == 'cuda':
             torch.cuda.synchronize(self.device)
 
-    @torch.inference_mode()
-    def predict_one(self, image_path, image_id, writer, handle):
+    def age_features(self, image_id):
+        if self.age_input == 'zeros':
+            return np.zeros((1, 2), dtype=np.float32)
         if image_id not in self.ages:
             raise ValueError('Missing official age record; absent Age value differs from absent image ID')
+        return self.processor.apply([self.ages[image_id]])
+
+    @torch.inference_mode()
+    def predict_one(self, image_path, image_id, writer, handle):
         # Decode is included even for the age-only comparator to retain the same E2E scope.
         image = open_rgb(image_path)
-        age = self.processor.apply([self.ages[image_id]])
+        age = self.age_features(image_id)
         if self.mode == 'age_only':
             logit = float((age.astype(np.float64) @ self.coef + self.intercept).item())
         else:

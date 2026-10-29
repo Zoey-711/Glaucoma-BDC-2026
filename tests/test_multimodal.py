@@ -39,3 +39,12 @@ def test_protocol_age_strata_remain_strings():
     import yaml
     config = yaml.safe_load(Path('configs/multimodal/M02_protocol.yaml').read_text())
     assert config['age_strata'] == ['under_40', '40_59', '60_79', '80_plus', 'missing']
+
+
+def test_placeholder_age_ignores_both_real_values_and_missing_records():
+    from src.multimodal import M02Predictor
+    predictor=M02Predictor.__new__(M02Predictor)
+    predictor.age_input='zeros'
+    predictor.ages={'a':137,'b':None}
+    assert np.array_equal(predictor.age_features('a'),predictor.age_features('b'))
+    assert np.array_equal(predictor.age_features('absent'),np.zeros((1,2),dtype=np.float32))
