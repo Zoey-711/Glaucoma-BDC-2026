@@ -1,0 +1,8 @@
+experiment_id: M02c
+protocol: configs/multimodal/M02_protocol.yaml
+kind: frozen_G01_pooled_features_age_MLP
+inputs: [G01_768_features, normalized_age, missing_or_abnormal_age]
+backbone_trainable: false
+selection_split: internal_train_holdout
+refit_split: full_official_train
+output: results/M02c/seed_42/fold_none

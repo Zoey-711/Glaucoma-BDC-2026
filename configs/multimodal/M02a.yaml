@@ -1,0 +1,7 @@
+experiment_id: M02a
+protocol: configs/multimodal/M02_protocol.yaml
+kind: frozen_G01_image_only
+trainable_parameters: none
+reference_predictions: outputs/runs/G01/validation.csv
+checkpoint: outputs/runs/G01/best.pt
+output: results/M02a/seed_42/fold_none

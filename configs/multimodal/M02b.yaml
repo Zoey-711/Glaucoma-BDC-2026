@@ -1,0 +1,6 @@
+experiment_id: M02b
+protocol: configs/multimodal/M02_protocol.yaml
+kind: age_only_logistic_regression
+inputs: [normalized_age, missing_or_abnormal_age]
+fit_split: official_train
+output: results/M02b/seed_42/fold_none
