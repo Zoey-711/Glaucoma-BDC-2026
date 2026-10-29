@@ -47,10 +47,13 @@ class BlackBorderCrop:
 
 def transform(size, train=False, augmentation='basic', preprocess='resize', preprocessed=False):
     from torchvision import transforms as T
-    if preprocess not in ['resize', 'black_border']:
+    if preprocess not in ['resize', 'black_border', 'safe_fov_v1']:
         raise ValueError('Reliable optic-disc ROI unavailable; ROI/fusion experiments must remain skipped')
     ops = []
     if not preprocessed:
+        if preprocess == 'safe_fov_v1':
+            from .fov import SafeFOVCrop
+            ops.append(SafeFOVCrop())
         if preprocess == 'black_border': ops.append(BlackBorderCrop())
         ops.append(T.Resize((size, size)))
     if train:

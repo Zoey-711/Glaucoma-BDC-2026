@@ -16,7 +16,7 @@
 | L02 Focal | IMPLEMENTED, TESTED | gamma 1/2、稳定 logits 实现 | 同上 |
 | L03 BCE+Pairwise AUC | IMPLEMENTED, TESTED | λ=0/.05/.2；单类别 batch 安全跳过 | 同上 |
 | L04 Balanced Batch | IMPLEMENTED, TESTED | 每 batch 两类、重复数/覆盖率单测 | 同上；Val 不重采样 |
-| S01 FOV 裁切 | IMPLEMENTED, TESTED | 官方 Train 6 图联系表、回退代码 | 扩大 QC 后方可视为正式可用 |
+| S01 FOV 裁切 | IMPLEMENTED, TESTED, BLOCKED_QC | 全量 Train 51,396 张，120 张对照及 12 张极端复核；73 项测试和真实 batch32 Smoke Test | 极暗图外周截断风险；未启动 S01b。见 [审计报告](S01_experiment_report.md) |
 | S02 LAB-L/CLAHE | IMPLEMENTED, TESTED | 官方 Train 6 图增强联系表 | 扩大病灶伪影 QC 后方可正式比较 |
 | S03 视盘 ROI | 接口 IMPLEMENTED, BLOCKED | 坐标/置信度/失败回退代码 | 无经可靠性验证且合规的定位器；禁止构造伪 ROI |
 | S04 全图+局部双分支 | IMPLEMENTED, TESTED, BLOCKED | 三模式单 logit/反向传播、双输入确定性验证单测；统一 Trainer 与 Predictor/cost 接线 | S03 定位器缺失；未经过真实 ROI/正式训练/T4 验收 |
