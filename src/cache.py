@@ -11,7 +11,7 @@ from .utils import sha256, write_json
 
 
 def build_cache(frame, manifest, size, preprocess, split, workers=8, root='data/cache'):
-    if split not in ['train', 'val'] or preprocess not in ['resize', 'black_border', 'safe_fov_v1']:
+    if split not in ['train', 'val'] or preprocess not in ['resize', 'black_border', 'safe_fov_v1', 'safe_fov_v2']:
         raise ValueError('Only train/val deterministic preprocessing can be cached')
     source_stats = []
     for path in frame.resolved_path:
@@ -22,6 +22,8 @@ def build_cache(frame, manifest, size, preprocess, split, workers=8, root='data/
                 'version': 'pil-rgb-exif-bilinear-v1'}
     if preprocess == 'safe_fov_v1':
         identity['crop_code_sha256'] = sha256(Path(__file__).with_name('fov.py'))
+    if preprocess == 'safe_fov_v2':
+        identity['crop_code_sha256'] = sha256(Path(__file__).with_name('fov_v2.py'))
     key = hashlib.sha256(json.dumps(identity, sort_keys=True).encode()).hexdigest()[:20]
     folder = Path(root) / f'{split}_{key}'
     folder.mkdir(parents=True, exist_ok=True)
@@ -39,6 +41,9 @@ def build_cache(frame, manifest, size, preprocess, split, workers=8, root='data/
         if preprocess == 'safe_fov_v1':
             from .fov import crop_fov
             im = crop_fov(im)[0]
+        if preprocess == 'safe_fov_v2':
+            from .fov_v2 import crop_fov_v2
+            im = crop_fov_v2(im)[0]
         im = resize(im)
         tmp = dest.with_suffix('.tmp')
         im.save(tmp, format='PNG')
