@@ -63,6 +63,9 @@ def transform(size, train=False, augmentation='basic', preprocess='resize', prep
         ops += [T.RandomHorizontalFlip(), T.RandomRotation(10)]
         if augmentation == 'color':
             ops.append(T.ColorJitter(brightness=.15, contrast=.15, saturation=.1, hue=.02))
+        if augmentation == 'r01b_light_color':
+            ops.append(T.RandomApply([T.ColorJitter(brightness=.10, contrast=.10,
+                saturation=.08, hue=.02)], p=.6))
     return T.Compose(ops + [T.ToTensor(), T.Normalize([.485, .456, .406], [.229, .224, .225])])
 
 

@@ -1,0 +1,36 @@
+seed: 42
+data:
+  train_csv: F:\glaucoma-bdc-2026\data\official\manifests\train.csv
+  val_csv: F:\glaucoma-bdc-2026\data\official\manifests\valid.csv
+  root: F:\glaucoma-bdc-2026\data\official
+  source: official
+model:
+  name: convnext_tiny
+  backend: timm
+  architecture: convnext_tiny.fb_in1k
+  weights_manifest: configs/weights_g01.local.json
+image_size: 224
+batch_size: 32
+num_workers: 6
+epochs: 30
+patience: 5
+lr: 0.0003
+weight_decay: 0.0001
+amp: true
+device: cuda
+threshold: 0.5
+output: results/R01b/seed_42/fold_none
+smoke: false
+loss:
+  name: bce
+sampler: shuffle
+augmentation: r01b_light_color
+preprocess: resize
+cache: true
+torch_threads: 4
+log_every: 100
+experiment_id: R01b
+plan:
+  reference: G01
+  only_factor: train_color_jitter
+  frozen_control: true
