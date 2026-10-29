@@ -11,7 +11,7 @@ from src.data import read_manifest
 from src.metrics import metrics
 from src.model import verified_weights
 from src.submission import validate_submission
-from cost import consistency
+from cost import consistency, require_official_environment
 
 
 def fixture_data(tmp_path):
@@ -89,6 +89,14 @@ def test_cost_ordering():
     b['Probability'] = [.8002, .8001]
     assert consistency(a, b) == 2
     assert consistency(a, a) == 0
+
+
+def test_official_cost_requires_exact_environment():
+    metadata = {'python': '3.12.8', 'torch': '2.10.0+cu128',
+                'torchvision': '0.25.0+cu128', 'cuda': '12.8'}
+    require_official_environment(metadata)
+    with pytest.raises(ValueError, match='environment mismatch'):
+        require_official_environment({**metadata, 'python': '3.11.9'})
 
 
 def test_unreviewed_weights_blocked():

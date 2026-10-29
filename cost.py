@@ -43,6 +43,20 @@ def consistency(expected, actual):
     return int(bad.sum())
 
 
+def require_official_environment(metadata):
+    """Prevent a local timing run from being reported as an official T4 check."""
+    expected = {'python': '3.12', 'torch': '2.10.0',
+                'torchvision': '0.25.0', 'cuda': '12.8'}
+    actual = {
+        'python': '.'.join(str(metadata.get('python', '')).split('.')[:2]),
+        'torch': str(metadata.get('torch', '')).split('+')[0],
+        'torchvision': str(metadata.get('torchvision', '')).split('+')[0],
+        'cuda': str(metadata.get('cuda', '')),
+    }
+    if actual != expected:
+        raise ValueError(f'Official T4 environment mismatch: {actual}; required: {expected}')
+
+
 def main():
     p = argparse.ArgumentParser()
     p.add_argument('submission')
@@ -74,6 +88,8 @@ def main():
     gpu = predictor.metadata['gpu'] or ''
     if not a.smoke and (predictor.device.type != 'cuda' or 'T4' not in gpu):
         raise ValueError('Official certification requires NVIDIA T4 CUDA; use --smoke for diagnostics')
+    if not a.smoke:
+        require_official_environment(predictor.metadata)
     all_expected = pd.read_csv(a.submission, dtype={'Image_name': str})
     expected = validate_submission(a.submission, all_expected.Image_name, predictor.threshold)
     ids = benchmark_ids(measured, expected.Image_name)
