@@ -1,0 +1,35 @@
+version: phase_f_v1
+baseline: G01
+models:
+  B02: outputs/runs/B02
+  G01: outputs/runs/G01
+  G02: results/G02/seed_42/fold_none
+  L03b: results/L03b/seed_42/fold_none
+  R01b: results/R01b/seed_42/fold_none
+fusions:
+  F01: {members: [G01, B02], method: probability, weights: [0.5, 0.5]}
+  F02: {members: [G01, L03b], method: probability, weights: [0.5, 0.5]}
+  F03: {members: [G01, R01b], method: probability, weights: [0.5, 0.5]}
+  F04: {members: [G01, G02], method: probability, weights: [0.5, 0.5]}
+  F01_LOGIT: {members: [G01, B02], method: logit, weights: [0.5, 0.5]}
+bootstrap: {replicates: 2000, seed: 42}
+stress:
+  source: official_train
+  seed: 20261030
+  positives: 64
+  negatives: 192
+  # All source models saw full Train: diagnostic reserved subset, NOT unseen holdout.
+  brightness: [0.8, 1.2]
+  contrast: [0.8, 1.2]
+  blur_sigma: [0.5, 1.0]
+  jpeg_quality: [85, 60]
+  canvas_size: 384
+deployment:
+  source: official_train
+  seed: 20261030
+  measured: 100
+  warmup: 5
+  rounds: 3
+  batch_size: 1
+  probability_tolerance: 0.001
+  timed: [B02, G01, F01]
