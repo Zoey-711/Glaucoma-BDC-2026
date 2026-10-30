@@ -143,7 +143,11 @@ class Predictor:
     def predict_one(self, path, image_id, writer, handle):
         # Shared end-to-end operation: disk decode -> preprocessing -> H2D -> forward
         # -> probability/label -> CSV write and flush. No cached image tensors.
-        p = self.predict_image(open_rgb(path))
+        return self.predict_decoded_one(open_rgb(path), image_id, writer, handle)
+
+    def predict_decoded_one(self, im, image_id, writer, handle):
+        """Run the shared prediction/write path on one already-decoded RGB image."""
+        p = self.predict_image(im)
         write_row(writer, image_id, p, self.threshold)
         handle.flush()
         return p
