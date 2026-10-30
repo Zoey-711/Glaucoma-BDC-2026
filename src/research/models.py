@@ -14,6 +14,9 @@ ARCHITECTURES = {
 
 def make_model(cfg, smoke=False, features=False):
     import timm
+    if not features and cfg.extra.get('head_variant') in {'matched_mlp', 'multiscale'}:
+        from .h03 import ConvNeXtHeadExperiment
+        return ConvNeXtHeadExperiment(cfg, smoke=smoke)
     if cfg.backbone not in ARCHITECTURES:
         raise ValueError('Unknown backbone')
     random_ssl_transfer=cfg.extra.get('ssl_initialization')=='random_then_ssl_then_finetune' and cfg.extra.get('ssl_encoder_checkpoint')

@@ -24,6 +24,18 @@ def manifest_semantic_hash(path):
     return hashlib.sha256(payload.encode('utf-8')).hexdigest()
 
 
+def manifest_component_hashes(path):
+    """Separate order-sensitive image list and annotation hashes; never image content hashes."""
+    frame=pd.read_csv(path,dtype=str,keep_default_na=False)
+    if not {'image_id','path','label'}.issubset(frame):
+        raise ValueError('Labeled manifest required for component hashes')
+    def digest(columns):
+        rows=frame[columns].to_dict('records')
+        return hashlib.sha256(json.dumps(rows,ensure_ascii=False,separators=(',',':')).encode()).hexdigest()
+    annotation_columns=['image_id']+[c for c in frame.columns if c not in {'image_id','path'}]
+    return {'images':digest(['image_id','path']),'annotations':digest(annotation_columns)}
+
+
 @dataclass(frozen=True)
 class ExperimentConfig:
     experiment_id: str

@@ -17,10 +17,10 @@ from sklearn.metrics import confusion_matrix
 
 from src.metrics import metrics
 from src.utils import seed_everything, sha256, write_json
-from .data import BalancedBatchSampler,ImageDataset,DualImageDataset,load_official
+from .data import BalancedBatchSampler,EpochSamplingDiagnostics,ImageDataset,DualImageDataset,load_official
 from .losses import BinaryObjective,bernoulli_kl
 from .models import make_model,split_parameters
-from .config import ExperimentConfig
+from .config import ExperimentConfig,manifest_component_hashes
 
 
 def utc():return datetime.now(timezone.utc).isoformat()
@@ -76,6 +76,8 @@ def evaluate(model,ds,cfg,device,source='official_val'):
     if [r[0] for r in records]!=list(range(len(ds))):raise ValueError('Validation missing or duplicate indices')
     frame=pd.DataFrame({'Image_name':ds.frame.image_id,'Label':[int(r[2]) for r in records],
                         'logit':[r[1] for r in records]})
+    if cfg.experiment_id.startswith('H'):
+        frame['True_Label']=frame['Label']
     frame['Probability']=torch.sigmoid(torch.tensor(frame.logit.to_numpy())).numpy()
     frame['experiment_id']=cfg.experiment_id;frame['source_split']=source
     score=metrics(frame.Label,frame.Probability)
@@ -120,6 +122,9 @@ def run(cfg,root,train_manifest,val_manifest,*,smoke=False,resume=False,group_ma
     if not smoke and device.type!='cuda':raise ValueError('Formal runs require CUDA AMP')
     manifest={'schema':'glaucoma_research_v1','experiment_id':cfg.experiment_id,'status':'RUNNING','git_commit':cfg.git_commit,
         'config_hash':cfg.identity(),'data_manifest_hash':cfg.data_manifest_hash,
+        'train_manifest_sha256':sha256(train_manifest),'val_manifest_sha256':sha256(val_manifest),
+        'train_components_sha256':manifest_component_hashes(train_manifest),
+        'val_components_sha256':manifest_component_hashes(val_manifest),
         'pretrained_sha256':cfg.pretrained_sha256,'seed':cfg.seed,'fold':cfg.fold,
         'gpu':torch.cuda.get_device_name() if device.type=='cuda' else None,
         'started_utc':started,'finished_utc':None,'smoke':smoke}
@@ -127,7 +132,14 @@ def run(cfg,root,train_manifest,val_manifest,*,smoke=False,resume=False,group_ma
     import yaml
     if not resume:
         (out/'config.yaml').write_text(yaml.safe_dump(cfg.as_dict(),sort_keys=False,allow_unicode=True),encoding='utf-8')
-        (out/'environment.txt').write_text(f'python={platform.python_version()}\ntorch={torch.__version__}\ncuda={torch.version.cuda}\ngpu={manifest["gpu"]}\n',encoding='utf-8')
+        environment=f'python={platform.python_version()}\ntorch={torch.__version__}\ncuda={torch.version.cuda}\ngpu={manifest["gpu"]}\n'
+        if cfg.experiment_id.startswith('H'):
+            import importlib.metadata
+            environment+=f'requirements_sha256={sha256("requirements.txt")}\n'
+            for package in ('timm','torchvision','numpy','scikit-learn','Pillow','opencv-python'):
+                try:environment+=f'{package}={importlib.metadata.version(package)}\n'
+                except importlib.metadata.PackageNotFoundError:environment+=f'{package}=NOT_INSTALLED\n'
+        (out/'environment.txt').write_text(environment,encoding='utf-8')
         (out/'training.log').write_text('',encoding='utf-8')
     is_dual=cfg.experiment_id.startswith('S04')
     if is_dual:
@@ -138,6 +150,8 @@ def run(cfg,root,train_manifest,val_manifest,*,smoke=False,resume=False,group_ma
             mode=cfg.extra.get('branch_mode','dual_branch'),smoke=smoke).to(device)
     else:
         model=make_model(cfg,smoke=smoke).to(device)
+    if cfg.experiment_id.startswith('H03') and hasattr(model,'cost_estimate'):
+        write_json(out/'model_cost_estimate.json',model.cost_estimate())
     backbone,head=split_parameters(model)
     optimizer=torch.optim.AdamW([{'params':backbone,'lr':cfg.backbone_lr},{'params':head,'lr':cfg.head_lr}],weight_decay=cfg.weight_decay)
     dataset_type=DualImageDataset if is_dual else ImageDataset
@@ -165,9 +179,11 @@ def run(cfg,root,train_manifest,val_manifest,*,smoke=False,resume=False,group_ma
         for epoch in range(start_epoch,cfg.epochs):
             train_ds.set_epoch(epoch);train_loader,sampler=loader(train_ds,cfg,True)
             model.train();loss_total=0.;pair_total=0;seen=0;overflow_steps=0
+            sample_stats=EpochSamplingDiagnostics(train_frame.label) if cfg.experiment_id.startswith('H04') else None
             if device.type=='cuda':torch.cuda.reset_peak_memory_stats(device)
             epoch_start=time.perf_counter();optimizer.zero_grad(set_to_none=True)
             for step,(x,y,index) in enumerate(train_loader):
+                if sample_stats is not None:sample_stats.update(index)
                 x=move_inputs(x,device);y=y.to(device,non_blocking=True)
                 if cfg.extra.get('mixup_alpha'):
                     if is_dual:raise ValueError('S04 MixUp requires paired-view implementation')
@@ -214,6 +230,7 @@ def run(cfg,root,train_manifest,val_manifest,*,smoke=False,resume=False,group_ma
                  'effective_pair_count':pair_total,'amp_overflow_steps':overflow_steps,
                  'lr':optimizer.param_groups[0]['lr'],**score}
             if sampler:row.update(sampler.last_stats)
+            if sample_stats is not None:row.update(sample_stats.summary())
             history.append(row)
             pd.DataFrame(history).to_csv(out/'train_history.csv',index=False)
             with (out/'training.log').open('a',encoding='utf-8') as log:log.write(json.dumps(row)+'\n')
@@ -236,6 +253,9 @@ def run(cfg,root,train_manifest,val_manifest,*,smoke=False,resume=False,group_ma
             print(json.dumps(row),flush=True)
             if stale>=cfg.patience:break
         manifest.update(status='COMPLETED',finished_utc=utc(),best_epoch=int(pd.read_json(out/'metrics.json',typ='series')['best_epoch']))
+        if cfg.experiment_id.startswith('H'):
+            manifest.update(checkpoint_bytes=(out/'best.pth').stat().st_size,
+                inference_precision='fp32',t4_latency_status='UNVERIFIED')
         write_json(out/'run_manifest.json',manifest);save_checksums(out)
         from .results import package_result
         package_result(out,out.parent/f'{cfg.experiment_id}_seed{cfg.seed}_fold{cfg.fold if cfg.fold is not None else "none"}.tar.gz')

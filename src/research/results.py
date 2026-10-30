@@ -9,7 +9,7 @@ import yaml
 
 from src.metrics import metrics
 from src.utils import sha256
-from .config import ExperimentConfig
+from .config import ExperimentConfig,manifest_semantic_hash,manifest_component_hashes
 
 
 REQUIRED={'best.pth','validation.csv','metrics.json','config.yaml','train_history.csv',
@@ -17,7 +17,7 @@ REQUIRED={'best.pth','validation.csv','metrics.json','config.yaml','train_histor
 VERSION='glaucoma_research_v1'
 
 
-def validate_result(directory,official_val,expected_config=None,freeze_inventory=None,allow_smoke=False):
+def validate_result(directory,official_val,expected_config=None,freeze_inventory=None,allow_smoke=False,official_train=None):
     root=Path(directory);missing=REQUIRED-{p.name for p in root.iterdir()}
     if missing:raise ValueError(f'Missing required result files: {sorted(missing)}')
     hashes={}
@@ -42,12 +42,35 @@ def validate_result(directory,official_val,expected_config=None,freeze_inventory
         raise ValueError('Manifest status/config/code mismatch')
     if meta.get('data_manifest_hash')!=cfg.data_manifest_hash or meta.get('pretrained_sha256')!=cfg.pretrained_sha256:
         raise ValueError('Data/pretraining provenance mismatch')
+    if meta.get('val_manifest_sha256') and meta['val_manifest_sha256']!=sha256(official_val):
+        raise ValueError('Validation manifest byte hash mismatch')
+    if cfg.data_manifest_hash['val']!=manifest_semantic_hash(official_val):
+        raise ValueError('Validation manifest semantic hash mismatch')
+    if meta.get('val_components_sha256') and meta['val_components_sha256']!=manifest_component_hashes(official_val):
+        raise ValueError('Validation image/annotation lists changed')
+    train_source=official_train or ('data/official/manifests/train.csv' if not allow_smoke else None)
+    if train_source:
+        if not Path(train_source).exists() or cfg.data_manifest_hash['train']!=manifest_semantic_hash(train_source):
+            raise ValueError('Training manifest version mismatch')
+        if meta.get('train_manifest_sha256') and meta['train_manifest_sha256']!=sha256(train_source):
+            raise ValueError('Training manifest byte hash mismatch')
+        if meta.get('train_components_sha256') and meta['train_components_sha256']!=manifest_component_hashes(train_source):
+            raise ValueError('Training image/annotation lists changed')
+        train_ids=set(pd.read_csv(train_source,usecols=['image_id']).image_id)
+        val_ids=set(pd.read_csv(official_val,usecols=['image_id']).image_id)
+        if train_ids & val_ids:
+            raise ValueError('Train/Val Image_name overlap')
     if meta.get('seed')!=cfg.seed or meta.get('fold')!=cfg.fold or not meta.get('finished_utc'):
         raise ValueError('Seed/fold/time mismatch')
     if cfg.git_commit is None and not (allow_smoke and meta.get('smoke')):raise ValueError('No pinned Git commit')
     official=pd.read_csv(official_val)
     pred=pd.read_csv(root/'validation.csv')
     if not {'Image_name','Label','logit','Probability'}.issubset(pred):raise ValueError('Prediction columns missing')
+    if pred.columns.duplicated().any():raise ValueError('Ambiguous prediction columns')
+    if cfg.experiment_id.startswith('H') and 'True_Label' not in pred:
+        raise ValueError('H experiment missing True_Label')
+    if 'True_Label' in pred and not np.array_equal(pred.True_Label.to_numpy(),pred.Label.to_numpy()):
+        raise ValueError('True_Label and Label disagree')
     if pred.Image_name.duplicated().any() or list(pred.Image_name)!=list(official.image_id):
         raise ValueError('Validation ID/order mismatch')
     if not np.array_equal(pred.Label.to_numpy(),official.label.to_numpy()):raise ValueError('Validation labels mismatch')

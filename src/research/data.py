@@ -64,6 +64,40 @@ class BalancedBatchSampler(Sampler):
                          'positive_draws':sum(self.labels[i] for i in seen)}
 
 
+class EpochSamplingDiagnostics:
+    """Observe actual Train-only draws; never alter the sampler or Val loader."""
+    def __init__(self, labels):
+        self.labels=np.asarray(labels,dtype=int)
+        if set(np.unique(self.labels))!={0,1}:
+            raise ValueError('Sampler diagnostics require binary Train labels')
+        self.seen=[];self.valid_batches=0;self.batches=0
+
+    def update(self, indices):
+        drawn=np.asarray(indices,dtype=int).reshape(-1)
+        if (drawn<0).any() or (drawn>=len(self.labels)).any():
+            raise ValueError('Sampler drew index outside official Train')
+        values=self.labels[drawn]
+        self.valid_batches+=int(0<values.sum()<len(values))
+        self.batches+=1
+        self.seen.extend(drawn.tolist())
+
+    def summary(self):
+        seen=np.asarray(self.seen,dtype=int)
+        pos=seen[self.labels[seen]==1]
+        unique_pos=len(np.unique(pos));unique_total=len(np.unique(seen))
+        repeat=max(0,len(pos)-unique_pos)
+        coverage=unique_total/len(self.labels)
+        repeat_rate=repeat/len(pos) if len(pos) else 0.
+        return {'sample_draws':len(seen),'positive_draws':len(pos),
+            'epoch_positive_ratio':len(pos)/len(seen) if len(seen) else 0.,
+            'positive_duplicate_draws':repeat,'positive_repeat_rate':repeat_rate,
+            'positive_unique_coverage':unique_pos/int((self.labels==1).sum()),
+            'independent_sample_coverage':coverage,
+            'effective_batch_ratio':self.valid_batches/self.batches if self.batches else 0.,
+            'single_class_batches':self.batches-self.valid_batches,
+            'sampling_risk_flag':bool(repeat_rate>.80 or coverage<.65)}
+
+
 def load_official(cfg,root,train_manifest,val_manifest,group_manifest=None):
     cfg.assert_data(train_manifest,val_manifest)
     train=read_manifest(train_manifest,root);val=read_manifest(val_manifest,root)

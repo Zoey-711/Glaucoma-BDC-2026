@@ -1,5 +1,9 @@
 # glaucoma-bdc-2026
 
+## Phase H remote research development
+
+The new [Phase H Linux execution and handoff guide](docs/phase_h_remote_execution.md) describes the independent H03 ConvNeXt multi-scale controls, H04 V2-S sampling controls, H01 optic-disc QC, explicit GPU launcher, and local result acceptance. This development delivery runs synthetic tests only; H04 remains blocked by unverified exact pretrained weights, H01 remains blocked pending manual ROI QC, and no Phase H model has been formally trained or submitted. Existing G05–G08 implementations are reused rather than duplicated.
+
 Phase F 已完成：固定等权概率融合 F01（G01+B02）Val AUROC **0.986582**、AUPRC **0.823281**，ΔAUROC **+0.003019**，未校正配对 95% CI **[+0.000347,+0.006123]**；F04（G01+G02）AUROC **0.987077**，但尚未测融合延迟。F01 实际加载 **127.63MB**，4060 FP32 独立测时 **82.34ms**，交错复核 **83.26ms**，T4 仍为 **UNVERIFIED**。五项比较是探索性结果，不能宣称稳定泛化收益。详见 [融合分析](docs/phase_f_fusion_report.md)、[部署预检](docs/phase_f_deployment_report.md)与 [Train 质量压力测试](docs/phase_f_robustness_report.md)。本阶段没有新训练或官方提交。
 
 R01b 轻度颜色增强已完成：G01 同配置下仅增加训练期 ColorJitter，Val AUROC **0.983430**、AUPRC **0.796771**，相对 G01 ΔAUROC **−0.000132**，配对 95% CI **[−0.004268, +0.003473]**，未证明收益。最佳 epoch 9，4060 端到端 **102.87ms**；详见 [R01b 实验报告](docs/R01b_experiment_report.md)。没有 T4 实测，也未启动 R01c/R02。
