@@ -16,6 +16,11 @@ from .utils import seed_everything, sha256
 class Predictor:
     def __init__(self, checkpoint, device='cuda', precision='fp32', allow_smoke=False):
         seed_everything(2026)
+        # Lock the math settings observed for the frozen batch-1 FP32 path.
+        # This records the existing behavior; it does not select a kernel by Val score.
+        torch.backends.cuda.matmul.allow_tf32 = False
+        torch.backends.cudnn.allow_tf32 = True
+        torch.set_float32_matmul_precision('highest')
         self.device = torch.device(device)
         if precision not in ['fp32', 'fp16'] or (precision == 'fp16' and self.device.type != 'cuda'):
             raise ValueError('FP16 requires CUDA; supported precision: fp32/fp16')
