@@ -71,12 +71,15 @@ def prepare(root=ROOT):
     lock.mkdir()
     for name in ('F01', 'F04'):
         shutil.copyfile(phase_f / 'analysis' / f'{name}_validation.csv', lock / f'{name}_validation.csv')
+    for name in ('B02', 'G01'):
+        shutil.copyfile(root / f'outputs/runs/{name}/validation.csv', lock / f'{name}_validation.csv')
     sample = official.sample(n=105, random_state=cfg['t4_validation']['sample_seed']).sort_index()
     sample[['image_id', 'path', 'label']].to_csv(lock / 't4_validation_105.csv', index=False)
     source_files = [cfg_path, root / 'data/official/manifests/valid.csv',
                     phase_f / 'analysis/model_evidence.json', phase_f / 'final_verification.json',
                     phase_f / 'analysis/F01_validation.csv', phase_f / 'analysis/F04_validation.csv']
     source_files += [root / evidence[m]['checkpoint'] for m in ('B02', 'G01', 'G02')]
+    source_files += [root / f'outputs/runs/{m}/validation.csv' for m in ('B02', 'G01')]
     write_json(lock / 'source_hashes.json', {str(p.relative_to(root)): sha256(p) for p in source_files})
     write_json(lock / 'fusion_definitions.json', cfg['fusions'])
     write_json(out / 'f04_vs_f01.json', result)
@@ -125,7 +128,7 @@ def prepare(root=ROOT):
             'members': [{'id': m, 'config_hash': evidence[m]['config_hash'],
                 'checkpoint_sha256': evidence[m]['checkpoint_sha256'],
                 'pretraining': evidence[m]['pretraining']} for m in members],
-            'frozen_validation_sha256': sha256(lock / f'{candidate}_validation.csv') if candidate == 'F01' else evidence[candidate]['prediction_sha256'],
+            'frozen_validation_sha256': sha256(lock / f'{candidate}_validation.csv'),
             'phase_g_config_sha256': sha256(cfg_path)}
         write_json(folder / 'candidate_manifest.json', manifest)
     write_json(out / 'status.json', {'F01': 'UNVERIFIED', 'F04': 'UNVERIFIED',

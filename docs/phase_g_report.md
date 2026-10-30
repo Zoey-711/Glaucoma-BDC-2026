@@ -4,7 +4,7 @@
 
 ## 1. 冻结证据
 
-`configs/phase_g.yaml` 固定 F01 = G01+B02、F04 = G01+G02，均为各 0.5 的**概率**平均，单视图，阈值 0.5；没有搜索融合权重。`outputs/phase_g/freeze/` 存放两份完整 5,849 行 Val 预测的只新增副本、融合定义、原始文件 SHA256 及固定的 105 张 Val 测速名单。`outputs/phase_g/f04_vs_f01.json` 和 `comparison.csv` 是可重算的比较结果。生成时重新从成员原始预测合成 F01/F04，逐行与 Phase F 冻结预测核对；原始 checkpoint、预测、官方 Val manifest、许可证和模型卡均逐文件核验 SHA256。患者 ID 缺失，以下 Bootstrap 以图像为单位，不能推断患者独立性。
+`configs/phase_g.yaml` 固定 F01 = G01+B02、F04 = G01+G02，均为各 0.5 的**概率**平均，单视图，阈值 0.5；没有搜索融合权重。`outputs/phase_g/freeze/` 存放 F01/F04/B02/G01 四份完整 5,849 行 Val 预测的只新增副本、融合定义、原始文件 SHA256 及固定的 105 张 Val 测速名单。`outputs/phase_g/f04_vs_f01.json` 和 `comparison.csv` 是可重算的比较结果。生成时重新从成员原始预测合成 F01/F04，逐行与 Phase F 冻结预测核对；原始 checkpoint、预测、官方 Val manifest、许可证和模型卡均逐文件核验 SHA256。患者 ID 缺失，以下 Bootstrap 以图像为单位，不能推断患者独立性。
 
 | 指标 | F01 | F04 | F04 − F01 |
 |---|---:|---:|---:|

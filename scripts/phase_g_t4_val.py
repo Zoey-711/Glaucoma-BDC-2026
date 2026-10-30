@@ -51,7 +51,7 @@ def run(candidate, output, root=ROOT):
     if not sample[['image_id', 'path', 'label']].reset_index(drop=True).equals(
             expected_sample[['image_id', 'path', 'label']].reset_index(drop=True)):
         raise ValueError('Locked T4 sample differs from deterministic Val selection')
-    frozen_file = (root / 'outputs/phase_g/freeze/F01_validation.csv') if manifest['candidate'] == 'F01' else root / ('outputs/runs/' + manifest['candidate'] + '/validation.csv')
+    frozen_file = root / 'outputs/phase_g/freeze' / f"{manifest['candidate']}_validation.csv"
     if sha256(frozen_file) != manifest['frozen_validation_sha256']:
         raise ValueError('Frozen validation prediction hash changed')
     frozen = pd.read_csv(frozen_file).rename(columns={'Image_name': 'image_id', 'Probability': 'probability'})
