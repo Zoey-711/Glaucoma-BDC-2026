@@ -2,7 +2,7 @@
 
 ## Phase H remote research development
 
-The new [Phase H Linux execution and handoff guide](docs/phase_h_remote_execution.md) describes the independent H03 ConvNeXt multi-scale controls, H04 V2-S sampling controls, H01 optic-disc QC, explicit GPU launcher, and local result acceptance. This development delivery runs synthetic tests only; H04 remains blocked by unverified exact pretrained weights, H01 remains blocked pending manual ROI QC, and no Phase H model has been formally trained or submitted. Existing G05–G08 implementations are reused rather than duplicated.
+Friends helping on the authorized Linux server should start with the actionable [friend task list](FRIEND_TASKS.md). The [Phase H Linux execution and handoff guide](docs/phase_h_remote_execution.md) describes the independent H03 ConvNeXt multi-scale controls, H04 V2-S sampling controls, H01 optic-disc QC, explicit GPU launcher, and local result acceptance. This development delivery runs synthetic tests only; H04 remains blocked by unverified exact pretrained weights, H01 remains blocked pending manual ROI QC, and no Phase H model has been formally trained or submitted. Existing G05–G08 implementations are reused rather than duplicated.
 
 Phase F 已完成：固定等权概率融合 F01（G01+B02）Val AUROC **0.986582**、AUPRC **0.823281**，ΔAUROC **+0.003019**，未校正配对 95% CI **[+0.000347,+0.006123]**；F04（G01+G02）AUROC **0.987077**，但尚未测融合延迟。F01 实际加载 **127.63MB**，4060 FP32 独立测时 **82.34ms**，交错复核 **83.26ms**，T4 仍为 **UNVERIFIED**。五项比较是探索性结果，不能宣称稳定泛化收益。详见 [融合分析](docs/phase_f_fusion_report.md)、[部署预检](docs/phase_f_deployment_report.md)与 [Train 质量压力测试](docs/phase_f_robustness_report.md)。本阶段没有新训练或官方提交。
 
