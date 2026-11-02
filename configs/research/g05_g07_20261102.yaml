@@ -1,0 +1,10 @@
+schema: glaucoma_research_queue_v1
+tasks:
+- experiment_id: G05
+  config: configs/research/G05.yaml
+  gpu: 3
+  depends_on: []
+- experiment_id: G07
+  config: configs/research/G07.yaml
+  gpu: 4
+  depends_on: []

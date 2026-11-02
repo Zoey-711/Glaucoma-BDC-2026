@@ -1,0 +1,29 @@
+{
+  "status": "approved",
+  "model": "swin_tiny",
+  "backend": "timm",
+  "architecture": "swin_tiny_patch4_window7_224.ms_in1k",
+  "dataset": "ImageNet-1K",
+  "pretraining_datasets": [
+    "ImageNet-1K"
+  ],
+  "medical_pretraining": false,
+  "source_url": "https://huggingface.co/timm/swin_tiny_patch4_window7_224.ms_in1k/resolve/4cc3a7275b50b53a7bec45f32c236ebe64227cff/model.safetensors",
+  "training_description_url": "https://huggingface.co/timm/swin_tiny_patch4_window7_224.ms_in1k/resolve/4cc3a7275b50b53a7bec45f32c236ebe64227cff/README.md",
+  "license": "MIT",
+  "license_url": "https://raw.githubusercontent.com/microsoft/Swin-Transformer/f82860bfb5225915aca09c3227159ee9e1df874d/LICENSE",
+  "license_file": "data/pretrained/swin_tiny_patch4_window7_224.ms_in1k/LICENSE.txt",
+  "license_sha256": "c2cfccb812fe482101a8f04597dfc5a9991a6b2748266c47ac91b6a5aae15383",
+  "model_card_file": "data/pretrained/swin_tiny_patch4_window7_224.ms_in1k/MODEL_CARD.md",
+  "model_card_sha256": "240bcfe61c2bf9f57cb6a18673e582f38e67324c8da102d5d6243117c4f18d59",
+  "allows_competition_and_redistribution": true,
+  "non_commercial_or_gated": false,
+  "reviewer": "Codex: fixed model-card weight-license declaration, stated nonmedical training datasets, public ungated access, complete upstream license and upstream LFS SHA256 verified",
+  "review_date": "2026-11-02",
+  "revision": "4cc3a7275b50b53a7bec45f32c236ebe64227cff",
+  "upstream_repository": "microsoft/Swin-Transformer",
+  "upstream_license_revision": "f82860bfb5225915aca09c3227159ee9e1df874d",
+  "path": "data/pretrained/swin_tiny_patch4_window7_224.ms_in1k/model.safetensors",
+  "sha256": "fb01861f793143135fa0d6cd97b1631e4b33eaa3ee162bbea9e62de1c76ebac1",
+  "review_basis": "Exact weight model card declares the retained license. License permits use and redistribution subject to retained copyright/license notices; upstream full license and fixed source evidence are retained. This records technical provenance review, not organizer certification."
+}

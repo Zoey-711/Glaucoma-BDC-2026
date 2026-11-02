@@ -33,6 +33,12 @@ def make_model(cfg, smoke=False, features=False):
             from safetensors.torch import load_file
             state=load_file(m['path'])
         else: state=torch.load(m['path'],map_location='cpu',weights_only=True)
+        if cfg.backbone == 'swin_tiny':
+            # The released Microsoft checkpoint retains resolution-dependent
+            # attention masks/indices. Use timm's upstream conversion to rebuild
+            # those buffers at the configured resolution; keep strict parameters.
+            from timm.models.swin_transformer import checkpoint_filter_fn
+            state = checkpoint_filter_fn(state, model)
         model.load_state_dict(state,strict=True)
     model.reset_classifier(0 if features else 1)
     transfer=cfg.extra.get('ssl_encoder_checkpoint')

@@ -1,0 +1,30 @@
+{
+  "status": "approved",
+  "model": "efficientnet_v2_s",
+  "backend": "timm",
+  "architecture": "tf_efficientnetv2_s.in21k_ft_in1k",
+  "dataset": "ImageNet-1K",
+  "pretraining_datasets": [
+    "ImageNet-21K",
+    "ImageNet-1K"
+  ],
+  "medical_pretraining": false,
+  "source_url": "https://huggingface.co/timm/tf_efficientnetv2_s.in21k_ft_in1k/resolve/ea9abc143ea2b9d8e1ec1de277bce02149b9cf0e/model.safetensors",
+  "training_description_url": "https://huggingface.co/timm/tf_efficientnetv2_s.in21k_ft_in1k/resolve/ea9abc143ea2b9d8e1ec1de277bce02149b9cf0e/README.md",
+  "license": "Apache-2.0",
+  "license_url": "https://raw.githubusercontent.com/google/automl/6a54c8741e7c3265d4547c4f35f47a0391122dc5/LICENSE",
+  "license_file": "data/pretrained/tf_efficientnetv2_s.in21k_ft_in1k/LICENSE.txt",
+  "license_sha256": "9e1d2eb8c31e22dd7c7a0999ee1db23de8dde21215b14fa4b6f396789d594b3d",
+  "model_card_file": "data/pretrained/tf_efficientnetv2_s.in21k_ft_in1k/MODEL_CARD.md",
+  "model_card_sha256": "0f287c27f7fd5394053cf9e5f5d809201417a7fca02f88ef4eb821cefd8f8aa1",
+  "allows_competition_and_redistribution": true,
+  "non_commercial_or_gated": false,
+  "reviewer": "Codex: fixed model-card weight-license declaration, stated nonmedical training datasets, public ungated access, complete upstream license and upstream LFS SHA256 verified",
+  "review_date": "2026-11-02",
+  "revision": "ea9abc143ea2b9d8e1ec1de277bce02149b9cf0e",
+  "upstream_repository": "google/automl",
+  "upstream_license_revision": "6a54c8741e7c3265d4547c4f35f47a0391122dc5",
+  "path": "data/pretrained/tf_efficientnetv2_s.in21k_ft_in1k/model.safetensors",
+  "sha256": "6f1933fb6c0d760eae03863ad0110570393e16c0610f8fe94dc9f978e52ec59c",
+  "review_basis": "Exact weight model card declares the retained license. License permits use and redistribution subject to retained copyright/license notices; upstream full license and fixed source evidence are retained. This records technical provenance review, not organizer certification."
+}

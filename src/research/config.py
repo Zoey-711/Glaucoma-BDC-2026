@@ -128,7 +128,12 @@ class ExperimentConfig:
         m = verified_weights(self.weights_manifest, self.backbone)
         if m['sha256'] != self.pretrained_sha256 or m['source_url'] != self.pretrained_source:
             raise ValueError('Weight SHA256/source differs from config')
-        if self.license != 'Apache-2.0' or not m['allows_competition_and_redistribution']:
+        # Legacy reviewed manifests predate the explicit license field and are
+        # Apache-2.0. New MIT weights must identify MIT in both config and manifest.
+        reviewed_license = m.get('license', 'Apache-2.0')
+        if (self.license not in {'Apache-2.0', 'MIT'}
+            or reviewed_license != self.license
+            or not m['allows_competition_and_redistribution']):
             raise ValueError('Weight license not approved for redistribution')
         return m
 
